@@ -56,10 +56,7 @@ def home(request):
                 if team_filter_form.is_valid()
                 else set()
             )
-            if selected_team_ids:
-                my_dots_only = False
-            else:
-                my_dots_only = False
+            my_dots_only = False
     else:
         my_dots_only = False
         selected_team_ids = explicit_team_ids
