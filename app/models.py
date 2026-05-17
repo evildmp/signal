@@ -1,5 +1,10 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils import timezone
+
+import random
+from datetime import timedelta
 
 
 def reparent_to_grandparent(collector, field, sub_objs, using):
@@ -71,3 +76,68 @@ class TeamMembership(models.Model):
 
 	def __str__(self):
 		return f"{self.user.username} -> {self.team.name}"
+
+
+DOT_IDENTIFIER_ADJECTIVES = (
+	"calm",
+	"bright",
+	"quiet",
+	"gentle",
+	"steady",
+	"brave",
+	"kind",
+	"clear",
+	"quick",
+	"warm",
+)
+
+DOT_IDENTIFIER_COLOURS = (
+	"red",
+	"blue",
+	"green",
+	"amber",
+	"teal",
+	"gray",
+	"white",
+	"black",
+	"silver",
+	"gold",
+)
+
+DOT_IDENTIFIER_NOUNS = (
+	"moon",
+	"tree",
+	"frog",
+	"sea",
+	"hill",
+	"stone",
+	"river",
+	"cloud",
+	"leaf",
+	"bird",
+)
+
+
+def generate_dot_identifier():
+	while True:
+		identifier = "-".join(
+			[
+				random.choice(DOT_IDENTIFIER_ADJECTIVES),
+				random.choice(DOT_IDENTIFIER_COLOURS),
+				random.choice(DOT_IDENTIFIER_NOUNS),
+			]
+		)
+		if not Dot.objects.filter(identifier=identifier).exists():
+			return identifier
+
+
+class Dot(models.Model):
+	x = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+	y = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+	identifier = models.CharField(max_length=64, unique=True, default=generate_dot_identifier)
+	created_at = models.DateTimeField(auto_now_add=True)
+	teams = models.ManyToManyField(Team, related_name="dots")
+
+	def is_visible(self, reference_time=None):
+		now = reference_time or timezone.now()
+		return self.created_at >= (now - timedelta(days=7))

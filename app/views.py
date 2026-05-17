@@ -1,8 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.utils import timezone
+
+from datetime import timedelta
 
 from app.forms import MyDotsOnlyForm, TeamFilterForm
-from app.models import Team
+from app.models import Dot, Team
 
 
 def build_team_tree(teams):
@@ -80,6 +83,16 @@ def home(request):
             )
             my_dots_only_form = MyDotsOnlyForm(initial={"enabled": my_dots_only})
 
+    visibility_cutoff = timezone.now() - timedelta(days=7)
+    if selected_team_ids:
+        dots = (
+            Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
+            .distinct()
+            .order_by("identifier")
+        )
+    else:
+        dots = Dot.objects.none()
+
     return render(
         request,
         "app/home.html",
@@ -91,5 +104,6 @@ def home(request):
             "team_filter_form": team_filter_form,
             "team_field_name": team_filter_form["team_ids"].html_name,
             "my_dots_only_form": my_dots_only_form,
+            "dots": dots,
         },
     )

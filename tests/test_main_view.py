@@ -2,7 +2,11 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 
-from app.models import Team
+from datetime import timedelta
+
+from django.utils import timezone
+
+from app.models import Dot, Team
 
 
 def login_as_jerry(client):
@@ -88,3 +92,30 @@ def test_selecting_a_team_clears_my_dots_only(client):
     assert response.status_code == 200
     assert response.context["my_dots_only"] is False
     assert response.context["selected_team_ids"] == {blue_team_id}
+
+
+@pytest.mark.django_db
+def test_main_view_shows_only_recent_dots_for_selected_teams(client):
+    login_as_jerry(client)
+
+    blue = Team.objects.get(name="Blue")
+    deep_red = Team.objects.get(name="Deep red")
+    organisation = Team.objects.get(name="Organisation")
+
+    visible_dot = Dot.objects.create(x=10, y=20)
+    visible_dot.teams.add(blue)
+
+    stale_dot = Dot.objects.create(x=30, y=40)
+    stale_dot.teams.add(deep_red)
+    Dot.objects.filter(id=stale_dot.id).update(
+        created_at=timezone.now() - timedelta(days=8)
+    )
+
+    non_selected_dot = Dot.objects.create(x=50, y=60)
+    non_selected_dot.teams.add(organisation)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    returned_identifiers = {dot.identifier for dot in response.context["dots"]}
+    assert returned_identifiers == {visible_dot.identifier}
