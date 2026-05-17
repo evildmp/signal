@@ -1,0 +1,18 @@
+<li>
+  <label>
+    <input
+      type="checkbox"
+      name="team_ids"
+      value="{{ node.team.id }}"
+      {% if node.team.id in selected_team_ids %}checked{% endif %}
+    >
+    {{ node.team.name }}
+  </label>
+  {% if node.children %}
+    <ul>
+      {% for child in node.children %}
+        {% include "app/_team_tree.html" with node=child selected_team_ids=selected_team_ids only %}
+      {% endfor %}
+    </ul>
+  {% endif %}
+</li>

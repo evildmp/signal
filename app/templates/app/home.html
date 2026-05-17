@@ -8,5 +8,14 @@
   <body>
     <h1>Signal</h1>
     <p>Place a dot; select to edit; drag to move</p>
+
+    <aside aria-label="Team drawer">
+      <h2>Teams</h2>
+      <ul>
+        {% for node in team_tree %}
+          {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids only %}
+        {% endfor %}
+      </ul>
+    </aside>
   </body>
 </html>
