@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    {% load static %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Signal Login</title>
+    <link rel="stylesheet" href="https://assets.ubuntu.com/v1/vanilla-framework-version-4.13.0.min.css">
+    <link rel="stylesheet" href="{% static 'app/login.css' %}">
   </head>
-  <body>
-    <h1>Log in</h1>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Log in</button>
-    </form>
+  <body class="is-paper">
+    <main class="p-card">
+        <h1 class="p-heading--4">Log in</h1>
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button class="p-button--positive" type="submit">Log in</button>
+        </form>
+      </main>
   </body>
 </html>
