@@ -12,26 +12,23 @@
 
     <aside aria-label="Team drawer">
       <h2>Teams</h2>
-      <form method="post" hx-post="/" hx-trigger="change from:input[name='team_ids']" hx-target="body">
+      <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
         {% csrf_token %}
+        {{ team_filter_form.action }}
         <ul>
           {% for node in team_tree %}
-            {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids only %}
+            {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
           {% endfor %}
+        </ul>
+      </form>
+
+      <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
+        {% csrf_token %}
+        {{ my_dots_only_form.action }}
+        <ul>
           <li>
-            <input type="hidden" name="action" value="set_team_filters">
-            <label>
-              <input
-                type="checkbox"
-                name="enabled"
-                value="1"
-                hx-post="/"
-                hx-trigger="change"
-                hx-target="body"
-                hx-include="[name=csrfmiddlewaretoken]"
-                hx-vals='{"action":"set_my_dots_only"}'
-                {% if my_dots_only %}checked{% endif %}
-              >
+            <label for="{{ my_dots_only_form.enabled.id_for_label }}">
+              {{ my_dots_only_form.enabled }}
               My dots only
             </label>
           </li>

@@ -5,11 +5,33 @@ from django.core.management import call_command
 from app.models import Team
 
 
-@pytest.mark.django_db
-def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client):
+def login_as_jerry(client):
     call_command("seed_initial_data")
     jerry = get_user_model().objects.get(username="jerry")
     client.force_login(jerry)
+    return jerry
+
+
+def post_my_dots_only(client, enabled=True):
+    payload = {"action": "set_my_dots_only"}
+    if enabled:
+        payload["enabled"] = "1"
+    return client.post("/", payload)
+
+
+def post_team_filters(client, team_ids):
+    return client.post(
+        "/",
+        {
+            "action": "set_team_filters",
+            "team_ids": [str(team_id) for team_id in team_ids],
+        },
+    )
+
+
+@pytest.mark.django_db
+def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client):
+    login_as_jerry(client)
 
     response = client.get("/")
 
@@ -26,9 +48,7 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client):
 
 @pytest.mark.django_db
 def test_main_view_drawer_exposes_hierarchy_for_jerry(client):
-    call_command("seed_initial_data")
-    jerry = get_user_model().objects.get(username="jerry")
-    client.force_login(jerry)
+    login_as_jerry(client)
 
     response = client.get("/")
     assert response.status_code == 200
@@ -49,17 +69,9 @@ def test_main_view_drawer_exposes_hierarchy_for_jerry(client):
 
 @pytest.mark.django_db
 def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client):
-    call_command("seed_initial_data")
-    jerry = get_user_model().objects.get(username="jerry")
-    client.force_login(jerry)
+    login_as_jerry(client)
 
-    response = client.post(
-        "/",
-        {
-            "action": "set_my_dots_only",
-            "enabled": "1",
-        },
-    )
+    response = post_my_dots_only(client)
 
     assert response.status_code == 200
     assert response.context["my_dots_only"] is True
@@ -68,19 +80,10 @@ def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client
 
 @pytest.mark.django_db
 def test_selecting_a_team_clears_my_dots_only(client):
-    call_command("seed_initial_data")
-    jerry = get_user_model().objects.get(username="jerry")
+    login_as_jerry(client)
     blue_team_id = Team.objects.get(name="Blue").id
-    client.force_login(jerry)
 
-    response = client.post(
-        "/",
-        {
-            "action": "set_team_filters",
-            "enabled": "1",
-            "team_ids": [str(blue_team_id)],
-        },
-    )
+    response = post_team_filters(client, [blue_team_id])
 
     assert response.status_code == 200
     assert response.context["my_dots_only"] is False
