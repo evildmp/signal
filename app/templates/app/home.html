@@ -1,39 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    {% load static %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Signal</title>
+    <link rel="stylesheet" href="https://assets.ubuntu.com/v1/vanilla-framework-version-4.13.0.min.css">
+    <link rel="stylesheet" href="{% static 'app/home.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   </head>
-  <body>
-    <h1>Signal</h1>
-    <p>Place a dot; select to edit; drag to move</p>
+  <body class="is-paper">
+    <input id="drawer-toggle" class="drawer-toggle-input" type="checkbox">
+    <div class="l-application">
+      <aside id="team-drawer" class="l-navigation" aria-label="Team drawer">
+        <nav aria-label="Team filters" class="p-panel">
+          <div class="p-panel__header">
+            <h2 class="p-panel__title p-heading--5">Teams</h2>
+          </div>
+          <div class="p-panel__content drawer-content">
+            <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
+              {% csrf_token %}
+              {{ my_dots_only_form.action }}
+              <ul>
+                <li>
+                  <label for="{{ my_dots_only_form.enabled.id_for_label }}">
+                    {{ my_dots_only_form.enabled }}
+                    My dots only
+                  </label>
+                </li>
+              </ul>
+            </form>
+            <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
+              {% csrf_token %}
+              {{ team_filter_form.action }}
+              <ul>
+                {% for node in team_tree %}
+                  {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
+                {% endfor %}
+              </ul>
+            </form>
 
-    <aside aria-label="Team drawer">
-      <h2>Teams</h2>
-      <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
-        {% csrf_token %}
-        {{ team_filter_form.action }}
-        <ul>
-          {% for node in team_tree %}
-            {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
-          {% endfor %}
-        </ul>
-      </form>
+            <form method="post" action="{% url 'logout' %}" class="drawer-logout">
+              {% csrf_token %}
+              <button class="p-button--base" type="submit">Log out</button>
+            </form>
+          </div>
+        </nav>
 
-      <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
-        {% csrf_token %}
-        {{ my_dots_only_form.action }}
-        <ul>
-          <li>
-            <label for="{{ my_dots_only_form.enabled.id_for_label }}">
-              {{ my_dots_only_form.enabled }}
-              My dots only
-            </label>
-          </li>
-        </ul>
-      </form>
-    </aside>
+        <label for="drawer-toggle" class="drawer-toggle-control drawer-toggle-control--desktop p-button--base" aria-label="Toggle teams drawer">
+          <i class="icon-desktop-open p-icon--chevron-left" aria-hidden="true"></i>
+          <i class="icon-desktop-collapsed p-icon--chevron-right" aria-hidden="true"></i>
+        </label>
+      </aside>
+
+      <label for="drawer-toggle" class="drawer-toggle-control drawer-toggle-control--mobile p-button--base" aria-label="Toggle teams drawer">
+        <i class="icon-mobile p-icon--menu" aria-hidden="true"></i>
+      </label>
+
+      <main class="l-main">
+        <section class="p-panel">
+          <div class="p-panel__header">
+            <h1 class="p-panel__title">Signal</h1>
+          </div>
+          <div class="p-panel__content">
+            <p class="p-text--small">Place a dot; select to edit; drag to move</p>
+            <section class="p-card" aria-label="Canvas placeholder">
+              Workspace canvas and dot interactions will appear here.
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <label for="drawer-toggle" class="drawer-overlay" aria-hidden="true"></label>
+    </div>
   </body>
 </html>
