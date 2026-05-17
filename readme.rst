@@ -39,17 +39,15 @@ Working with Signal
 Get started
 -----------
 
-Install the dependencies with `pip install -r requirements.txt` (ideally in a clean Python virtual environment).
+Install the dependencies with `pip install -r requirements_dev.txt` (ideally in a clean Python virtual environment).
 
 Run the migrations with `python manage.py migrate`.
 
-Seed the default teams with `python initialise_data.py`.
+Seed initial development data with `python manage.py seed_initial_data`.
 
 Start the app with `python manage.py runserver`, (or `python manage.py runserver 0.0.0.0:8080` if you need a different local port).
 
 How to run tests
 ----------------
 
-The backend unit tests require no running server. Run them with `python -m pytest dots/tests.py`.
-
-The browser tests in `test_frontend.py` use Playwright and require both a running server and Playwright's browser binaries. Before running the frontend tests for the first time, install the Chromium binary with `playwright install chromium`. Then start the dev server in one terminal with `python manage.py runserver`, and in another run `python -m pytest test_frontend.py`.
+Run `python -m pytest`.
