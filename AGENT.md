@@ -115,7 +115,7 @@ When created, a dot has a "claim token". This is the mechanism by which the inte
 
 #### The drawer
 
-At the left of the grid is a drawer, open by default on wider displays, by closed for narrower ones. When opened, it displays the hierarchical list of teams, showing only those that the user is actually a member of (whether explictly or only a member by implication).
+At the left of the grid is a drawer, open by default on wider displays, but closed for narrower ones. When opened, it displays the hierarchical list of teams, showing only those that the user is actually a member of (whether explictly or only a member by implication).
 
 For each team listed there should be a checkbox. The textbox allows the user the team(s) for which data should be displayed. By default, the teams that the user is explictly a member of should be selected.
 
