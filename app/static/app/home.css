@@ -152,11 +152,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* Horizontal centering (default) */
-.signal-dot-label--x-center {
-  /* transform handled by --above / --below / --side */
-}
-
 /* Near right edge: to the left of the dot */
 .signal-dot-label--x-left {
   transform: translate(calc(-100% - 0.55rem), -50%);

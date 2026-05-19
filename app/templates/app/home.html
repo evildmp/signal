@@ -4,6 +4,7 @@
     {% load static %}
     <meta charset="utf-8">
     <title>Signal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="https://assets.ubuntu.com/v1/vanilla-framework-version-4.13.0.min.css">
     <link rel="stylesheet" href="{% static 'app/home.css' %}">
@@ -89,7 +90,6 @@
                 ></span>
               {% endfor %}
             </section>
-            <div id="notifications" aria-live="polite"></div>
           </div>
         </section>
       </main>
@@ -101,6 +101,7 @@
         var menuToggle = document.getElementById('menu-toggle');
         var menuClose = document.getElementById('menu-close');
         var menuPin = document.getElementById('menu-pin');
+        var FADE_DELAY_MS = 3000;
 
         if (menuToggle) {
           menuToggle.addEventListener('click', function () {
@@ -147,8 +148,8 @@
                 label.classList.add('fading');
                 setTimeout(function () {
                   label.remove();
-                }, 3000);
-              }, 3000);
+                }, FADE_DELAY_MS);
+              }, FADE_DELAY_MS);
             }
           }
         });
