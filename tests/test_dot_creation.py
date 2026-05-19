@@ -2,30 +2,10 @@ import re
 import uuid
 
 import pytest
-from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.test import override_settings
 from playwright.sync_api import expect, sync_playwright
 
-from app.models import Dot, Team, TeamMembership
-
-
-def create_user_with_explicit_teams(username="jerry", team_names=("Blue", "Deep red")):
-    user = get_user_model().objects.create_user(username=username, password=username)
-    teams = [Team.objects.create(name=name) for name in team_names]
-    TeamMembership.objects.bulk_create(
-        [TeamMembership(user=user, team=team) for team in teams]
-    )
-    return user, teams
-
-
-def create_minimum_team_tree_for_jerry():
-    organisation = Team.objects.create(name="Organisation")
-    colours = Team.objects.create(name="Colours", parent=organisation)
-    blue = Team.objects.create(name="Blue", parent=colours)
-    red = Team.objects.create(name="Red", parent=colours)
-    deep_red = Team.objects.create(name="Deep red", parent=red)
-    return blue, deep_red
+from app.models import Dot, Team
 
 
 @pytest.mark.django_db
@@ -45,9 +25,8 @@ def test_dot_claim_token_is_unique():
 
 
 @pytest.mark.django_db
-def test_create_dot_endpoint_publishes_to_user_explicit_teams(client):
-    jerry, _ = create_user_with_explicit_teams()
-    client.force_login(jerry)
+def test_create_dot_endpoint_publishes_to_user_explicit_teams(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
 
     response = client.post(
         "/dot/create/",
@@ -61,7 +40,7 @@ def test_create_dot_endpoint_publishes_to_user_explicit_teams(client):
     assert dot.y == 73
 
     explicit_team_names = sorted(
-        Team.objects.explicit_for_user(jerry).values_list("name", flat=True)
+        Team.objects.explicit_for_user(jerry_with_explicit_teams).values_list("name", flat=True)
     )
     dot_team_names = sorted(dot.teams.values_list("name", flat=True))
     assert dot_team_names == explicit_team_names
@@ -84,9 +63,8 @@ def test_create_dot_requires_login(client):
 
 
 @pytest.mark.django_db
-def test_create_dot_rejects_invalid_coordinates(client):
-    jerry, _ = create_user_with_explicit_teams()
-    client.force_login(jerry)
+def test_create_dot_rejects_invalid_coordinates(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
 
     before_count = Dot.objects.count()
 
@@ -100,11 +78,7 @@ def test_create_dot_rejects_invalid_coordinates(client):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_clicking_grid_places_a_dot_and_shows_notification(live_server):
-    blue, deep_red = create_minimum_team_tree_for_jerry()
-    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
-    TeamMembership.objects.create(user=jerry, team=blue)
-    TeamMembership.objects.create(user=jerry, team=deep_red)
+def test_clicking_grid_places_a_dot_and_shows_notification(live_server, jerry_with_explicit_teams):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
@@ -142,12 +116,8 @@ def test_clicking_grid_places_a_dot_and_shows_notification(live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_label_positions_near_edges(live_server):
+def test_label_positions_near_edges(live_server, jerry_with_explicit_teams):
     """Labels near grid edges should flip position to stay visible."""
-    blue, deep_red = create_minimum_team_tree_for_jerry()
-    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
-    TeamMembership.objects.create(user=jerry, team=blue)
-    TeamMembership.objects.create(user=jerry, team=deep_red)
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
@@ -176,13 +146,9 @@ def test_label_positions_near_edges(live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server):
+def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server, jerry_with_explicit_teams):
     """When a dot is placed at the very top of the grid, every part of the
     label must be below (greater screen y than) the bottom of the dot."""
-    blue, deep_red = create_minimum_team_tree_for_jerry()
-    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
-    TeamMembership.objects.create(user=jerry, team=blue)
-    TeamMembership.objects.create(user=jerry, team=deep_red)
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()

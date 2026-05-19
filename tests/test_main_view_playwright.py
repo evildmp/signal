@@ -1,26 +1,9 @@
 import pytest
-from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from playwright.sync_api import expect, sync_playwright
-
-from app.models import Team, TeamMembership
-
-
-def create_jerry_with_minimum_team_tree():
-    organisation = Team.objects.create(name="Organisation")
-    colours = Team.objects.create(name="Colours", parent=organisation)
-    blue = Team.objects.create(name="Blue", parent=colours)
-    red = Team.objects.create(name="Red", parent=colours)
-    deep_red = Team.objects.create(name="Deep red", parent=red)
-
-    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
-    TeamMembership.objects.create(user=jerry, team=blue)
-    TeamMembership.objects.create(user=jerry, team=deep_red)
 
 
 @pytest.mark.django_db(transaction=True)
-def test_selecting_my_dots_only_clears_selected_team_checkboxes(live_server):
-    create_jerry_with_minimum_team_tree()
+def test_selecting_my_dots_only_clears_selected_team_checkboxes(live_server, jerry_with_explicit_teams):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
@@ -49,8 +32,7 @@ def test_selecting_my_dots_only_clears_selected_team_checkboxes(live_server):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_selecting_a_team_clears_my_dots_only(live_server):
-    create_jerry_with_minimum_team_tree()
+def test_selecting_a_team_clears_my_dots_only(live_server, jerry_with_explicit_teams):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
