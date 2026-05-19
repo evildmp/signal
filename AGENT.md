@@ -149,7 +149,9 @@ When jerry selects "Organisation" he sees all the dots that are published to any
 
 ### Managing dots
 
-When jerry clicks or taps on the grid, a dot is placed. The dot is now published to all the teams that jerry has selected in the hierarchical view list.
+When jerry clicks or taps on the grid, a dot is placed. The dot is published to the team(s) that jerry is explictly a member of.
+
+An alert message appears, that says "Published to <team> and <team>." and then fades.
 
 jerry can click on the dot, and edit its attributes. He sees its unique identifier. He can delete the dot. He can choose or unchoose the option to have his name published with it. He also sees a hierachical list of teams he is a member of and can choose to alter the teams where his dot is published.
 
