@@ -3,8 +3,8 @@
   <head>
     {% load static %}
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Signal</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="https://assets.ubuntu.com/v1/vanilla-framework-version-4.13.0.min.css">
     <link rel="stylesheet" href="{% static 'app/home.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -75,7 +75,7 @@
           </div>
           <div class="p-panel__content">
             <p class="p-text--small">Place a dot; select to edit; drag to move</p>
-            <section class="p-card signal-grid" aria-label="Signal grid">
+            <section class="p-card signal-grid" aria-label="Signal grid" id="signal-grid" data-create-url="{% url 'create_dot' %}">
               <span class="signal-axis signal-axis--x-left p-text--small">Feeling bad</span>
               <span class="signal-axis signal-axis--x-right p-text--small">Feeling good</span>
               <span class="signal-axis signal-axis--y-top p-text--small">Aroused</span>
@@ -89,6 +89,7 @@
                 ></span>
               {% endfor %}
             </section>
+            <div id="notifications" aria-live="polite"></div>
           </div>
         </section>
       </main>
@@ -118,6 +119,47 @@
             nav.classList.toggle('is-pinned');
           });
         }
+
+        var grid = document.getElementById('signal-grid');
+
+        if (grid) {
+          grid.addEventListener('click', function (e) {
+            if (e.target.closest('.signal-dot, .signal-axis')) return;
+            var rect = grid.getBoundingClientRect();
+            var x = Math.round((e.clientX - rect.left) / rect.width * 100);
+            var y = Math.round(100 - (e.clientY - rect.top) / rect.height * 100);
+
+            htmx.ajax('POST', grid.dataset.createUrl, {
+              target: grid,
+              swap: 'beforeend',
+              values: {'x': x, 'y': y},
+              headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
+            });
+          });
+        }
+
+        document.body.addEventListener('htmx:afterSwap', function (e) {
+          if (e.detail.target === grid) {
+            var labels = grid.querySelectorAll('.signal-dot-label');
+            var label = labels[labels.length - 1];
+            if (label) {
+              setTimeout(function () {
+                label.classList.add('fading');
+                setTimeout(function () {
+                  label.remove();
+                }, 3000);
+              }, 3000);
+            }
+          }
+        });
+
+        document.body.addEventListener('dotClaimed', function (e) {
+          if (e.detail) {
+            var tokens = JSON.parse(sessionStorage.getItem('dotTokens') || '{}');
+            tokens[e.detail.identifier] = e.detail.token;
+            sessionStorage.setItem('dotTokens', JSON.stringify(tokens));
+          }
+        });
       })();
     </script>
   </body>

@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -137,6 +139,7 @@ class Dot(models.Model):
 	identifier = models.CharField(max_length=64, unique=True, default=generate_dot_identifier)
 	created_at = models.DateTimeField(auto_now_add=True)
 	teams = models.ManyToManyField(Team, related_name="dots")
+	claim_token = models.UUIDField(default=uuid.uuid4, editable=False)
 
 	def is_visible(self, reference_time=None):
 		now = reference_time or timezone.now()

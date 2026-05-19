@@ -1,7 +1,10 @@
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
+import json
 from datetime import timedelta
 
 from app.forms import MyDotsOnlyForm, TeamFilterForm
@@ -107,3 +110,57 @@ def home(request):
             "dots": dots,
         },
     )
+
+
+@login_required
+@require_POST
+def create_dot(request):
+    try:
+        x = int(request.POST.get("x", ""))
+        y = int(request.POST.get("y", ""))
+    except (ValueError, TypeError):
+        return HttpResponseBadRequest("Invalid coordinates")
+
+    if x < 0 or x > 100 or y < 0 or y > 100:
+        return HttpResponseBadRequest("Coordinates must be 0–100")
+
+    dot = Dot.objects.create(x=x, y=y)
+
+    explicit_teams = list(Team.objects.explicit_for_user(request.user))
+    dot.teams.set(explicit_teams)
+
+    team_names = [team.name for team in explicit_teams]
+    team_list = " and ".join(team_names)
+
+    dot_html = (
+        f'<span class="signal-dot" '
+        f'data-dot-identifier="{dot.identifier}" '
+        f'style="left: {dot.x}%; bottom: {dot.y}%;" '
+        f'title="{dot.identifier}"></span>'
+    )
+
+    # Determine label position class
+    label_y = "below" if dot.y > 80 else "above"
+    if dot.x < 20:
+        label_x = "right"
+    elif dot.x > 80:
+        label_x = "left"
+    else:
+        label_x = "center"
+
+    # When label goes left/right, always use "center" vertical mode (side labels are vertically centered)
+    if label_x != "center":
+        label_y = "side"
+    label_class = f"signal-dot-label signal-dot-label--{label_y} signal-dot-label--x-{label_x}"
+
+    notification_html = (
+        f'<span class="{label_class}"'
+        f' style="left: {dot.x}%; bottom: {dot.y}%;">'
+        f'Published to <span class="team-names">{team_list}</span>.'
+        '</span>'
+    )
+
+    response = HttpResponse(dot_html + notification_html)
+    response["HX-Trigger-After-Swap"] = json.dumps({"dotClaimed": {"identifier": dot.identifier, "token": str(dot.claim_token)}})
+
+    return response
