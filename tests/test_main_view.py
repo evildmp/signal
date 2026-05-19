@@ -9,6 +9,28 @@ from django.utils import timezone
 from app.models import Dot, Team
 
 
+def setup_jerry_with_minimum_hierarchy(client):
+    organisation = Team.objects.create(name="Organisation")
+    colours = Team.objects.create(name="Colours", parent=organisation)
+    blue = Team.objects.create(name="Blue", parent=colours)
+    red = Team.objects.create(name="Red", parent=colours)
+    deep_red = Team.objects.create(name="Deep red", parent=red)
+
+    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
+    jerry.team_memberships.create(team=blue)
+    jerry.team_memberships.create(team=deep_red)
+    client.force_login(jerry)
+
+    return {
+        "organisation": organisation,
+        "colours": colours,
+        "blue": blue,
+        "red": red,
+        "deep_red": deep_red,
+        "jerry": jerry,
+    }
+
+
 def login_as_jerry(client):
     call_command("seed_initial_data")
     jerry = get_user_model().objects.get(username="jerry")
@@ -35,7 +57,7 @@ def post_team_filters(client, team_ids):
 
 @pytest.mark.django_db
 def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client):
-    login_as_jerry(client)
+    setup_jerry_with_minimum_hierarchy(client)
 
     response = client.get("/")
 
@@ -52,7 +74,7 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client):
 
 @pytest.mark.django_db
 def test_main_view_drawer_exposes_hierarchy_for_jerry(client):
-    login_as_jerry(client)
+    setup_jerry_with_minimum_hierarchy(client)
 
     response = client.get("/")
     assert response.status_code == 200
@@ -73,7 +95,7 @@ def test_main_view_drawer_exposes_hierarchy_for_jerry(client):
 
 @pytest.mark.django_db
 def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client):
-    login_as_jerry(client)
+    setup_jerry_with_minimum_hierarchy(client)
 
     response = post_my_dots_only(client)
 
@@ -84,8 +106,8 @@ def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client
 
 @pytest.mark.django_db
 def test_selecting_a_team_clears_my_dots_only(client):
-    login_as_jerry(client)
-    blue_team_id = Team.objects.get(name="Blue").id
+    setup = setup_jerry_with_minimum_hierarchy(client)
+    blue_team_id = setup["blue"].id
 
     response = post_team_filters(client, [blue_team_id])
 
@@ -96,11 +118,16 @@ def test_selecting_a_team_clears_my_dots_only(client):
 
 @pytest.mark.django_db
 def test_main_view_shows_only_recent_dots_for_selected_teams(client):
-    login_as_jerry(client)
+    organisation = Team.objects.create(name="Organisation")
+    colours = Team.objects.create(name="Colours", parent=organisation)
+    blue = Team.objects.create(name="Blue", parent=colours)
+    red = Team.objects.create(name="Red", parent=colours)
+    deep_red = Team.objects.create(name="Deep red", parent=red)
 
-    blue = Team.objects.get(name="Blue")
-    deep_red = Team.objects.get(name="Deep red")
-    organisation = Team.objects.get(name="Organisation")
+    jerry = get_user_model().objects.create_user(username="jerry", password="jerry")
+    jerry.team_memberships.create(team=blue)
+    jerry.team_memberships.create(team=deep_red)
+    client.force_login(jerry)
 
     visible_dot = Dot.objects.create(x=10, y=20)
     visible_dot.teams.add(blue)
