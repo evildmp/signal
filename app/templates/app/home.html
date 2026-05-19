@@ -10,52 +10,63 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   </head>
   <body class="is-paper">
-    <input id="drawer-toggle" class="drawer-toggle-input" type="checkbox">
-    <div class="l-application">
-      <aside id="team-drawer" class="l-navigation" aria-label="Team drawer">
-        <nav aria-label="Team filters" class="p-panel">
+    <div class="l-application" role="presentation">
+      <div class="l-navigation-bar">
+        <div class="p-panel">
           <div class="p-panel__header">
-            <h2 class="p-panel__title p-heading--5">Teams</h2>
+            <h2 class="p-panel__title p-heading--5">Signal</h2>
+            <div class="p-panel__controls">
+              <button class="p-panel__toggle" id="menu-toggle" aria-label="Toggle navigation">Menu</button>
+            </div>
           </div>
-          <div class="p-panel__content drawer-content">
-            <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
-              {% csrf_token %}
-              {{ my_dots_only_form.action }}
-              <ul>
-                <li>
-                  <label for="{{ my_dots_only_form.enabled.id_for_label }}">
-                    {{ my_dots_only_form.enabled }}
-                    My dots only
-                  </label>
-                </li>
-              </ul>
-            </form>
-            <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
-              {% csrf_token %}
-              {{ team_filter_form.action }}
-              <ul>
-                {% for node in team_tree %}
-                  {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
-                {% endfor %}
-              </ul>
-            </form>
+        </div>
+      </div>
 
-            <form method="post" action="{% url 'logout' %}" class="drawer-logout">
-              {% csrf_token %}
-              <button class="p-button--base" type="submit">Log out</button>
-            </form>
+      <header class="l-navigation is-collapsed" id="l-navigation" aria-label="Team drawer">
+        <div class="l-navigation__drawer">
+          <div class="p-panel">
+            <div class="p-panel__header">
+              <h2 class="p-panel__title p-heading--5">Teams</h2>
+              <div class="p-panel__controls u-hide--large">
+                <button class="p-button--base has-icon u-no-margin u-hide--small" id="menu-pin" aria-label="Pin navigation">
+                  <i class="p-icon--pin" aria-hidden="true"></i>
+                </button>
+                <button class="p-button--base has-icon u-no-margin u-hide--medium" id="menu-close" aria-label="Close navigation">
+                  <i class="p-icon--close" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+            <div class="p-panel__content drawer-content">
+              <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
+                {% csrf_token %}
+                {{ my_dots_only_form.action }}
+                <ul>
+                  <li>
+                    <label for="{{ my_dots_only_form.enabled.id_for_label }}">
+                      {{ my_dots_only_form.enabled }}
+                      My dots only
+                    </label>
+                  </li>
+                </ul>
+              </form>
+              <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
+                {% csrf_token %}
+                {{ team_filter_form.action }}
+                <ul>
+                  {% for node in team_tree %}
+                    {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
+                  {% endfor %}
+                </ul>
+              </form>
+
+              <form method="post" action="{% url 'logout' %}" class="drawer-logout">
+                {% csrf_token %}
+                <button class="p-button--base" type="submit">Log out</button>
+              </form>
+            </div>
           </div>
-        </nav>
-
-        <label for="drawer-toggle" class="drawer-toggle-control drawer-toggle-control--desktop p-button--base" aria-label="Toggle teams drawer">
-          <i class="icon-desktop-open p-icon--chevron-left" aria-hidden="true"></i>
-          <i class="icon-desktop-collapsed p-icon--chevron-right" aria-hidden="true"></i>
-        </label>
-      </aside>
-
-      <label for="drawer-toggle" class="drawer-toggle-control drawer-toggle-control--mobile p-button--base" aria-label="Toggle teams drawer">
-        <i class="icon-mobile p-icon--menu" aria-hidden="true"></i>
-      </label>
+        </div>
+      </header>
 
       <main class="l-main">
         <section class="p-panel">
@@ -64,14 +75,50 @@
           </div>
           <div class="p-panel__content">
             <p class="p-text--small">Place a dot; select to edit; drag to move</p>
-            <section class="p-card" aria-label="Canvas placeholder">
-              Workspace canvas and dot interactions will appear here.
+            <section class="p-card signal-grid" aria-label="Signal grid">
+              <span class="signal-axis signal-axis--x-left p-text--small">Feeling bad</span>
+              <span class="signal-axis signal-axis--x-right p-text--small">Feeling good</span>
+              <span class="signal-axis signal-axis--y-top p-text--small">Aroused</span>
+              <span class="signal-axis signal-axis--y-bottom p-text--small">Settled</span>
+              {% for dot in dots %}
+                <span
+                  class="signal-dot"
+                  data-dot-identifier="{{ dot.identifier }}"
+                  style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
+                  title="{{ dot.identifier }}"
+                ></span>
+              {% endfor %}
             </section>
           </div>
         </section>
       </main>
-
-      <label for="drawer-toggle" class="drawer-overlay" aria-hidden="true"></label>
     </div>
+
+    <script>
+      (function () {
+        var nav = document.getElementById('l-navigation');
+        var menuToggle = document.getElementById('menu-toggle');
+        var menuClose = document.getElementById('menu-close');
+        var menuPin = document.getElementById('menu-pin');
+
+        if (menuToggle) {
+          menuToggle.addEventListener('click', function () {
+            nav.classList.toggle('is-collapsed');
+          });
+        }
+
+        if (menuClose) {
+          menuClose.addEventListener('click', function () {
+            nav.classList.add('is-collapsed');
+          });
+        }
+
+        if (menuPin) {
+          menuPin.addEventListener('click', function () {
+            nav.classList.toggle('is-pinned');
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
