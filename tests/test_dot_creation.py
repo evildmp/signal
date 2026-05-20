@@ -77,6 +77,32 @@ def test_create_dot_rejects_invalid_coordinates(client, jerry_with_explicit_team
     assert Dot.objects.count() == before_count
 
 
+@pytest.mark.django_db
+def test_move_dot_endpoint_updates_coordinates(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+    dot = Dot.objects.create(x=10, y=20)
+
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64"})
+
+    assert response.status_code == 200
+    dot.refresh_from_db()
+    assert dot.x == 72
+    assert dot.y == 64
+
+
+@pytest.mark.django_db
+def test_move_dot_endpoint_rejects_invalid_coordinates(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+    dot = Dot.objects.create(x=10, y=20)
+
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "999", "y": "-2"})
+
+    assert response.status_code == 400
+    dot.refresh_from_db()
+    assert dot.x == 10
+    assert dot.y == 20
+
+
 @pytest.mark.django_db(transaction=True)
 def test_clicking_grid_places_a_dot_and_shows_notification(live_server, jerry_with_explicit_teams):
 
@@ -188,3 +214,36 @@ def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server, jer
         )
 
         browser.close()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+    dot = Dot.objects.create(x=25, y=25)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        expect(dot_locator).to_be_visible()
+        initial_dots = page.locator(".signal-dot").count()
+
+        dot_box = dot_locator.bounding_box()
+        page.mouse.move(dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
+        page.mouse.up()
+
+        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
+
+        browser.close()
+
+    dot.refresh_from_db()
+    assert dot.x > 25
+    assert dot.y > 25

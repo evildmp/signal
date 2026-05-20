@@ -160,6 +160,27 @@ def create_dot(request):
 
 
 @login_required
+@require_POST
+def move_dot(request, identifier):
+    dot = get_object_or_404(Dot, identifier=identifier)
+
+    try:
+        x = int(request.POST.get("x", ""))
+        y = int(request.POST.get("y", ""))
+    except (ValueError, TypeError):
+        return HttpResponseBadRequest("Invalid coordinates")
+
+    if x < 0 or x > 100 or y < 0 or y > 100:
+        return HttpResponseBadRequest("Coordinates must be 0-100")
+
+    dot.x = x
+    dot.y = y
+    dot.save(update_fields=["x", "y"])
+
+    return HttpResponse("")
+
+
+@login_required
 def dot_edit(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
     visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))

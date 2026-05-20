@@ -89,7 +89,6 @@
         var menuToggle = document.getElementById('menu-toggle');
         var menuClose = document.getElementById('menu-close');
         var menuPin = document.getElementById('menu-pin');
-        var FADE_DELAY_MS = 3000;
 
         if (menuToggle) {
           menuToggle.addEventListener('click', function () {
@@ -110,9 +109,81 @@
         }
 
         var grid = document.getElementById('signal-grid');
+        var suppressGridClickUntil = 0;
+        var dragState = null;
+
+        function clampPercent(value) {
+          return Math.max(0, Math.min(100, value));
+        }
+
+        function gridPercentFromPointer(clientX, clientY) {
+          var rect = grid.getBoundingClientRect();
+          var x = Math.round((clientX - rect.left) / rect.width * 100);
+          var y = Math.round(100 - (clientY - rect.top) / rect.height * 100);
+          return {
+            x: clampPercent(x),
+            y: clampPercent(y)
+          };
+        }
+
+        function endDrag() {
+          if (!dragState) return;
+          document.removeEventListener('mousemove', onDragMove);
+          document.removeEventListener('mouseup', onDragEnd);
+
+          var finishedDrag = dragState;
+          dragState = null;
+
+          if (!finishedDrag.didMove || !finishedDrag.lastPosition) return;
+
+          suppressGridClickUntil = Date.now() + 300;
+          htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
+            swap: 'none',
+            values: {
+              x: finishedDrag.lastPosition.x,
+              y: finishedDrag.lastPosition.y
+            },
+            headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
+          });
+        }
+
+        function onDragMove(e) {
+          if (!dragState) return;
+
+          if (Math.abs(e.clientX - dragState.startClientX) + Math.abs(e.clientY - dragState.startClientY) > 3) {
+            dragState.didMove = true;
+          }
+
+          var position = gridPercentFromPointer(e.clientX, e.clientY);
+          dragState.lastPosition = position;
+          dragState.dot.style.left = position.x + '%';
+          dragState.dot.style.bottom = position.y + '%';
+        }
+
+        function onDragEnd() {
+          endDrag();
+        }
 
         if (grid) {
+          grid.addEventListener('mousedown', function (e) {
+            var dot = e.target.closest('.signal-dot');
+            if (!dot) return;
+
+            dragState = {
+              dot: dot,
+              didMove: false,
+              startClientX: e.clientX,
+              startClientY: e.clientY,
+              lastPosition: null
+            };
+
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+            e.preventDefault();
+          });
+
           grid.addEventListener('click', function (e) {
+            if (Date.now() <= suppressGridClickUntil) return;
             if (e.target.closest('.signal-dot, .signal-axis')) return;
             var rect = grid.getBoundingClientRect();
             var x = Math.round((e.clientX - rect.left) / rect.width * 100);
@@ -127,19 +198,15 @@
           });
         }
 
+        document.addEventListener('click', function (e) {
+          if (Date.now() > suppressGridClickUntil) return;
+          if (!e.target.closest('.signal-dot')) return;
+          e.preventDefault();
+          e.stopPropagation();
+        }, true);
+
         document.body.addEventListener('htmx:afterSwap', function (e) {
-          if (e.detail.target === grid) {
-            var labels = grid.querySelectorAll('.signal-dot-label');
-            var label = labels[labels.length - 1];
-            if (label) {
-              setTimeout(function () {
-                label.classList.add('fading');
-                setTimeout(function () {
-                  label.remove();
-                }, FADE_DELAY_MS);
-              }, FADE_DELAY_MS);
-            }
-          } else if (e.detail.target && e.detail.target.id === 'dot-editor-host') {
+          if (e.detail.target && e.detail.target.id === 'dot-editor-host') {
             var dialog = e.detail.target.querySelector('#dot-editor-dialog');
             if (dialog && !dialog.open) {
               dialog.showModal();
