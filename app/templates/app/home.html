@@ -118,8 +118,8 @@
 
         function gridPercentFromPointer(clientX, clientY) {
           var rect = grid.getBoundingClientRect();
-          var x = Math.round((clientX - rect.left) / rect.width * 100);
-          var y = Math.round(100 - (clientY - rect.top) / rect.height * 100);
+          var x = (clientX - rect.left) / rect.width * 100;
+          var y = 100 - (clientY - rect.top) / rect.height * 100;
           return {
             x: clampPercent(x),
             y: clampPercent(y)
@@ -136,12 +136,20 @@
 
           if (!finishedDrag.didMove || !finishedDrag.lastPosition) return;
 
+          var snappedPosition = {
+            x: Math.round(finishedDrag.lastPosition.x),
+            y: Math.round(finishedDrag.lastPosition.y)
+          };
+
+          finishedDrag.dot.style.left = snappedPosition.x + '%';
+          finishedDrag.dot.style.bottom = snappedPosition.y + '%';
+
           suppressGridClickUntil = Date.now() + 300;
           htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
             swap: 'none',
             values: {
-              x: finishedDrag.lastPosition.x,
-              y: finishedDrag.lastPosition.y
+              x: snappedPosition.x,
+              y: snappedPosition.y
             },
             headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
           });
@@ -156,8 +164,8 @@
 
           var position = gridPercentFromPointer(e.clientX, e.clientY);
           dragState.lastPosition = position;
-          dragState.dot.style.left = position.x + '%';
-          dragState.dot.style.bottom = position.y + '%';
+          dragState.dot.style.left = position.x.toFixed(2) + '%';
+          dragState.dot.style.bottom = position.y.toFixed(2) + '%';
         }
 
         function onDragEnd() {
@@ -185,9 +193,9 @@
           grid.addEventListener('click', function (e) {
             if (Date.now() <= suppressGridClickUntil) return;
             if (e.target.closest('.signal-dot, .signal-axis')) return;
-            var rect = grid.getBoundingClientRect();
-            var x = Math.round((e.clientX - rect.left) / rect.width * 100);
-            var y = Math.round(100 - (e.clientY - rect.top) / rect.height * 100);
+            var position = gridPercentFromPointer(e.clientX, e.clientY);
+            var x = Math.round(position.x);
+            var y = Math.round(position.y);
 
             htmx.ajax('POST', grid.dataset.createUrl, {
               target: grid,
