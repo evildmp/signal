@@ -61,7 +61,7 @@
   max-height: calc(100vh - 12rem);
   max-height: calc(100dvh - 12rem);
   overflow: hidden;
-  background: #f7f7f7;
+  background: #fcfcfc;
   border: 1px solid #cdcdcd;
 }
 
@@ -114,13 +114,62 @@
 
 .signal-dot {
   position: absolute;
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 0.85rem;
+  height: 0.85rem;
   border-radius: 999px;
   background: #0e8420;
   transform: translate(-50%, 50%);
   cursor: pointer;
   z-index: 2;
+  box-shadow: none;
+  transition: box-shadow 0.18s;
+}
+
+.signal-dot--claimed {
+  background: #e95420;
+}
+
+.signal-dot--claimed::after {
+  content: "";
+  position: absolute;
+  inset: -0.24rem;
+  border-radius: 999px;
+  background: rgba(233, 84, 32, 0.34);
+  box-shadow: 0 0 0 2px rgba(233,84,32,0.22);
+  z-index: 1;
+  pointer-events: none;
+  animation: signal-dot-claimed-pulse 2.2s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+
+.signal-dot--claimed:active::after,
+.signal-dot--claimed.is-dragging::after,
+.signal-dot--claimed:hover::after {
+  animation-play-state: paused;
+  background: rgba(233, 84, 32, 0.52);
+  box-shadow: 0 0 0 2px rgba(233,84,32,0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-dot--claimed::after {
+    animation: none !important;
+    background: rgba(233, 84, 32, 0.42);
+    box-shadow: 0 0 0 2px rgba(233,84,32,0.28);
+  }
+}
+
+@keyframes signal-dot-claimed-pulse {
+  0% {
+    opacity: 0.32;
+    transform: scale(1);
+  }
+  60% {
+    opacity: 0.62;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.32;
+    transform: scale(1);
+  }
 }
 
 .signal-dot::before {
@@ -152,7 +201,7 @@
 
 /* Near top: below */
 .signal-dot-label--below {
-  transform: translate(-50%, calc(100% + 0.375rem));
+  transform: translate(-50%, calc(100% + 0.5rem));
 }
 
 /* Side placement: vertically centered */

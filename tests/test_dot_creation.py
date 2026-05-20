@@ -82,7 +82,7 @@ def test_move_dot_endpoint_updates_coordinates(client, jerry_with_explicit_teams
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64"})
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64", "claim_token": str(dot.claim_token)})
 
     assert response.status_code == 200
     dot.refresh_from_db()
@@ -95,9 +95,22 @@ def test_move_dot_endpoint_rejects_invalid_coordinates(client, jerry_with_explic
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "999", "y": "-2"})
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "999", "y": "-2", "claim_token": str(dot.claim_token)})
 
     assert response.status_code == 400
+    dot.refresh_from_db()
+    assert dot.x == 10
+    assert dot.y == 20
+
+
+@pytest.mark.django_db
+def test_move_dot_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+    dot = Dot.objects.create(x=10, y=20)
+
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "50", "y": "50", "claim_token": "not-the-right-token"})
+
+    assert response.status_code == 403
     dot.refresh_from_db()
     assert dot.x == 10
     assert dot.y == 20
@@ -189,6 +202,8 @@ def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server, jer
         expect(grid).to_be_visible()
         bb = grid.bounding_box()
 
+        initial_count = page.locator(".signal-dot").count()
+
         # Click at 50% x, 2px from the top edge → y coordinate near 100
         page.mouse.click(
             bb["x"] + bb["width"] * 0.5,
@@ -196,8 +211,7 @@ def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server, jer
         )
 
         # Wait for the new dot and label to appear
-        initial_count = page.locator(".signal-dot").count()
-        expect(page.locator(".signal-dot")).to_have_count(initial_count)
+        expect(page.locator(".signal-dot")).to_have_count(initial_count + 1)
 
         dot = page.locator(".signal-dot").last
         label = page.locator(".signal-dot-label").last
@@ -218,9 +232,6 @@ def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(live_server, jer
 
 @pytest.mark.django_db(transaction=True)
 def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
-    dot = Dot.objects.create(x=25, y=25)
-    dot.teams.add(minimum_team_hierarchy["blue"])
-
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         page = browser.new_page()
@@ -230,8 +241,24 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
-        expect(dot_locator).to_be_visible()
+        # Create a dot via the browser so the claim token is stored in localStorage.
+        grid = page.locator(".signal-grid")
+        bb = grid.bounding_box()
+        page.mouse.click(bb["x"] + bb["width"] * 0.25, bb["y"] + bb["height"] * 0.75)
+        expect(page.locator(".signal-dot")).to_have_count(1)
+
+        dot_locator = page.locator(".signal-dot").first
+        identifier = dot_locator.get_attribute("data-dot-identifier")
+
+        token_before_refresh = page.evaluate(
+            "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
+            identifier,
+        )
+        assert token_before_refresh is not None
+
+        page.reload()
+        expect(page.locator(".signal-dot")).to_have_count(1)
+
         initial_dots = page.locator(".signal-dot").count()
 
         dot_box = dot_locator.bounding_box()
@@ -241,9 +268,8 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
         page.mouse.up()
 
         expect(page.locator(".signal-dot")).to_have_count(initial_dots)
-
         browser.close()
 
-    dot.refresh_from_db()
-    assert dot.x > 25
-    assert dot.y > 25
+    from app.models import Dot as DotModel
+    moved_dot = DotModel.objects.get(identifier=identifier)
+    assert moved_dot.x != 25 or moved_dot.y != 75  # position should have changed

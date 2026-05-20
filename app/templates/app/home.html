@@ -112,6 +112,39 @@
         var suppressGridClickUntil = 0;
         var dragState = null;
 
+        var sessionTokens = JSON.parse(sessionStorage.getItem('dotTokens') || '{}');
+        var localTokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+        if (Object.keys(localTokens).length === 0 && Object.keys(sessionTokens).length > 0) {
+          localStorage.setItem('dotTokens', JSON.stringify(sessionTokens));
+        }
+
+        function updateClaimedDotClasses() {
+          var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+          document.querySelectorAll('.signal-dot').forEach(function(dot) {
+            var id = dot.dataset.dotIdentifier;
+            if (tokens[id]) {
+              dot.classList.add('signal-dot--claimed');
+            } else {
+              dot.classList.remove('signal-dot--claimed');
+            }
+          });
+        }
+
+        // Initial mark
+        updateClaimedDotClasses();
+
+        // After new dot claim
+        document.body.addEventListener('dotClaimed', function (e) {
+          setTimeout(updateClaimedDotClasses, 0);
+        });
+
+        // After grid redraw (e.g. filter change)
+        document.body.addEventListener('htmx:afterSwap', function (e) {
+          if (e.detail.target && e.detail.target.id === 'signal-grid') {
+            setTimeout(updateClaimedDotClasses, 0);
+          }
+        });
+
         function clampPercent(value) {
           return Math.max(0, Math.min(100, value));
         }
@@ -144,12 +177,16 @@
           finishedDrag.dot.style.left = snappedPosition.x + '%';
           finishedDrag.dot.style.bottom = snappedPosition.y + '%';
 
+          var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+          var claimToken = tokens[finishedDrag.dot.dataset.dotIdentifier] || '';
+
           suppressGridClickUntil = Date.now() + 300;
           htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
             swap: 'none',
             values: {
               x: snappedPosition.x,
-              y: snappedPosition.y
+              y: snappedPosition.y,
+              claim_token: claimToken
             },
             headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
           });
@@ -225,9 +262,9 @@
 
         document.body.addEventListener('dotClaimed', function (e) {
           if (e.detail) {
-            var tokens = JSON.parse(sessionStorage.getItem('dotTokens') || '{}');
+            var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
             tokens[e.detail.identifier] = e.detail.token;
-            sessionStorage.setItem('dotTokens', JSON.stringify(tokens));
+            localStorage.setItem('dotTokens', JSON.stringify(tokens));
           }
         });
       })();

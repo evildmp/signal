@@ -164,6 +164,10 @@ def create_dot(request):
 def move_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
+    claim_token = request.POST.get("claim_token", "")
+    if str(dot.claim_token) != claim_token:
+        return HttpResponse(status=403)
+
     try:
         x = int(request.POST.get("x", ""))
         y = int(request.POST.get("y", ""))
