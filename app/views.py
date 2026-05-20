@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.utils import timezone
@@ -124,6 +125,9 @@ def create_dot(request):
     dot_html = (
         f'<span class="signal-dot" '
         f'data-dot-identifier="{dot.identifier}" '
+        f'hx-get="/dot/{dot.identifier}/edit/" '
+        f'hx-target="#dot-editor-host" '
+        f'hx-swap="innerHTML" '
         f'style="left: {dot.x}%; bottom: {dot.y}%;" '
         f'title="{dot.identifier}"></span>'
     )
@@ -153,3 +157,38 @@ def create_dot(request):
     response["HX-Trigger-After-Swap"] = json.dumps({"dotClaimed": {"identifier": dot.identifier, "token": str(dot.claim_token)}})
 
     return response
+
+
+@login_required
+def dot_edit(request, identifier):
+    dot = get_object_or_404(Dot, identifier=identifier)
+    visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))
+    team_tree = build_team_tree(visible_teams)
+
+    if request.method == "POST":
+        form = DotEditorForm(request.POST, dot=dot, user=request.user)
+        if form.is_valid():
+            selected_team_ids = form.cleaned_team_ids()
+            dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
+            return HttpResponse("")
+        else:
+            selected_team_ids = {
+                int(team_id)
+                for team_id in request.POST.getlist("team_ids")
+                if str(team_id).isdigit()
+            }
+    else:
+        form = DotEditorForm(dot=dot, user=request.user)
+        selected_team_ids = set(dot.teams.values_list("id", flat=True))
+
+    return render(
+        request,
+        "app/_dot_editor.html",
+        {
+            "dot": dot,
+            "form": form,
+            "team_tree": team_tree,
+            "selected_team_ids": selected_team_ids,
+            "team_field_name": form["team_ids"].html_name,
+        },
+    )

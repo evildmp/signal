@@ -1,0 +1,73 @@
+<dialog id="dot-editor-dialog" data-dot-identifier="{{ dot.identifier }}" aria-label="Dot editor dialog" tabindex="-1">
+  <form
+    id="dot-editor-form"
+    method="post"
+    class="dot-editor-form"
+    hx-post="{% url 'dot_edit' dot.identifier %}"
+    hx-target="#dot-editor-host"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <h2 class="p-heading--5">Edit dot</h2>
+    <p class="p-text--small">{{ dot.identifier }}</p>
+    {{ form.identifier }}
+    <p class="p-text--small">Publish to:</p>
+    <div class="dot-editor-team-tree">
+      <ul>
+        <li>
+          <label for="{{ form.private.id_for_label }}">
+            {{ form.private }}
+            Private
+          </label>
+        </li>
+        {% for node in team_tree %}
+          {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
+        {% endfor %}
+      </ul>
+    </div>
+    {{ form.team_ids.errors }}
+    {% if form.errors %}
+      <p class="p-notification--negative">{{ form.errors }}</p>
+    {% endif %}
+    <div class="dot-editor-actions">
+      <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
+      <button type="submit" class="p-button--positive">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  (function () {
+    var form = document.getElementById('dot-editor-form');
+    if (!form) return;
+
+    var privateCheckbox = form.querySelector('input[name="private"]');
+    var teamCheckboxes = form.querySelectorAll('input[name="{{ team_field_name }}"]');
+    if (!privateCheckbox) return;
+
+    function syncPrivateFromTeams() {
+      var hasTeamSelection = Array.from(teamCheckboxes).some(function (checkbox) {
+        return checkbox.checked;
+      });
+      privateCheckbox.checked = !hasTeamSelection;
+    }
+
+    function clearTeamsWhenPrivateChecked() {
+      if (!privateCheckbox.checked) return;
+      teamCheckboxes.forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+    }
+
+    teamCheckboxes.forEach(function (checkbox) {
+      checkbox.addEventListener('change', syncPrivateFromTeams);
+    });
+
+    privateCheckbox.addEventListener('change', clearTeamsWhenPrivateChecked);
+
+    form.addEventListener('submit', function () {
+      syncPrivateFromTeams();
+      clearTeamsWhenPrivateChecked();
+    });
+  })();
+</script>

@@ -1,5 +1,7 @@
 from django import forms
 
+from app.models import Team
+
 
 class TeamFilterForm(forms.Form):
     action = forms.CharField(widget=forms.HiddenInput(), initial="set_team_filters")
@@ -64,6 +66,16 @@ class DotEditorForm(forms.Form):
             self.fields["team_ids"].choices = [
                 (str(team.id), team.name) for team in visible_teams
             ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        selected_team_ids = cleaned_data.get("team_ids") or []
+
+        # If no team destination is selected, treat the dot as private.
+        if not cleaned_data.get("private") and not selected_team_ids:
+            cleaned_data["private"] = True
+
+        return cleaned_data
 
     def cleaned_team_ids(self):
         if self.cleaned_data.get("private"):

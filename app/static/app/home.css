@@ -119,6 +119,14 @@
   border-radius: 999px;
   background: #0e8420;
   transform: translate(-50%, 50%);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.signal-dot::before {
+  content: "";
+  position: absolute;
+  inset: -0.45rem;
 }
 
 .signal-dot-label {
@@ -170,6 +178,43 @@
   opacity: 0;
 }
 
+#dot-editor-dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  border: 1px solid #cdcdcd;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+#dot-editor-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dot-editor-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dot-editor-team-tree ul {
+  margin: 0;
+  list-style: none;
+  padding-left: 1rem;
+}
+
+.dot-editor-team-tree ul ul {
+  padding-left: 0.9rem;
+}
+
+.dot-editor-team-tree li,
+.dot-editor-team-tree label {
+  margin: 0;
+  line-height: 1.08;
+}
+
+.dot-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (min-width: 620px) and (max-width: 1035px) {
   .l-navigation:not(.is-pinned) .p-panel__header,
   .l-navigation:not(.is-pinned) .p-panel__content {
@@ -186,6 +231,11 @@
 
   .drawer-content li,
   .drawer-content label {
+    font-size: 0.85rem;
+  }
+
+  .dot-editor-team-tree li,
+  .dot-editor-team-tree label {
     font-size: 0.85rem;
   }
 }

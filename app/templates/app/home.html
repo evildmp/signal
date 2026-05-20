@@ -69,11 +69,15 @@
                 <span
                   class="signal-dot"
                   data-dot-identifier="{{ dot.identifier }}"
+                  hx-get="{% url 'dot_edit' dot.identifier %}"
+                  hx-target="#dot-editor-host"
+                  hx-swap="innerHTML"
                   style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
                   title="{{ dot.identifier }}"
                 ></span>
               {% endfor %}
             </section>
+            <div id="dot-editor-host"></div>
           </div>
         </section>
       </main>
@@ -134,6 +138,12 @@
                   label.remove();
                 }, FADE_DELAY_MS);
               }, FADE_DELAY_MS);
+            }
+          } else if (e.detail.target && e.detail.target.id === 'dot-editor-host') {
+            var dialog = e.detail.target.querySelector('#dot-editor-dialog');
+            if (dialog && !dialog.open) {
+              dialog.showModal();
+              dialog.focus();
             }
           }
         });
