@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 import json
 from datetime import timedelta
 
-from app.forms import MyDotsOnlyForm, TeamFilterForm
+from app.forms import DotEditorForm, DrawerFilterForm, MyDotsOnlyForm, TeamFilterForm
 from app.models import Dot, Team
 
 
@@ -43,48 +43,38 @@ def home(request):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "set_my_dots_only":
-            my_dots_only_form = MyDotsOnlyForm(request.POST)
-            team_filter_form = TeamFilterForm(team_choices=team_choices)
-            my_dots_only_form.is_valid()
-
-            my_dots_only = my_dots_only_form.cleaned_data.get("enabled", False)
-            if my_dots_only_form.is_valid() and my_dots_only:
-                selected_team_ids = set()
-            else:
-                selected_team_ids = explicit_team_ids
+            payload = {
+                "action": "set_filters",
+                "enabled": request.POST.get("enabled", ""),
+                "team_ids": [str(team_id) for team_id in explicit_team_ids],
+            }
+            drawer_filter_form = DrawerFilterForm(payload, team_choices=team_choices)
+        elif action == "set_team_filters":
+            payload = {
+                "action": "set_filters",
+                "team_ids": request.POST.getlist("team_ids"),
+            }
+            drawer_filter_form = DrawerFilterForm(payload, team_choices=team_choices)
         else:
-            team_filter_form = TeamFilterForm(request.POST, team_choices=team_choices)
-            my_dots_only_form = MyDotsOnlyForm()
-            team_filter_form.is_valid()
+            drawer_filter_form = DrawerFilterForm(request.POST, team_choices=team_choices)
 
-            selected_team_ids = (
-                team_filter_form.cleaned_team_ids()
-                if team_filter_form.is_valid()
-                else set()
-            )
+        if drawer_filter_form.is_valid():
+            my_dots_only = drawer_filter_form.cleaned_data.get("enabled", False)
+            selected_team_ids = set() if my_dots_only else drawer_filter_form.cleaned_team_ids()
+        else:
             my_dots_only = False
+            selected_team_ids = set()
     else:
         my_dots_only = False
         selected_team_ids = explicit_team_ids
-        team_filter_form = TeamFilterForm(
-            initial={"team_ids": [str(team_id) for team_id in selected_team_ids]},
-            team_choices=team_choices,
-        )
-        my_dots_only_form = MyDotsOnlyForm(initial={"enabled": my_dots_only})
 
-    if request.method == "POST":
-        if action == "set_my_dots_only":
-            my_dots_only_form = MyDotsOnlyForm(initial={"enabled": my_dots_only})
-            team_filter_form = TeamFilterForm(
-                initial={"team_ids": [str(team_id) for team_id in selected_team_ids]},
-                team_choices=team_choices,
-            )
-        else:
-            team_filter_form = TeamFilterForm(
-                initial={"team_ids": [str(team_id) for team_id in selected_team_ids]},
-                team_choices=team_choices,
-            )
-            my_dots_only_form = MyDotsOnlyForm(initial={"enabled": my_dots_only})
+    drawer_filter_form = DrawerFilterForm(
+        initial={
+            "enabled": my_dots_only,
+            "team_ids": [str(team_id) for team_id in selected_team_ids],
+        },
+        team_choices=team_choices,
+    )
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     if selected_team_ids:
@@ -104,9 +94,8 @@ def home(request):
             "team_tree": team_tree,
             "selected_team_ids": selected_team_ids,
             "my_dots_only": my_dots_only,
-            "team_filter_form": team_filter_form,
-            "team_field_name": team_filter_form["team_ids"].html_name,
-            "my_dots_only_form": my_dots_only_form,
+            "drawer_filter_form": drawer_filter_form,
+            "team_field_name": drawer_filter_form["team_ids"].html_name,
             "dots": dots,
         },
     )

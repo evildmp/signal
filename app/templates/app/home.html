@@ -40,24 +40,8 @@
             <div class="p-panel__content drawer-content">
               <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
                 {% csrf_token %}
-                {{ my_dots_only_form.action }}
-                <ul>
-                  <li>
-                    <label for="{{ my_dots_only_form.enabled.id_for_label }}">
-                      {{ my_dots_only_form.enabled }}
-                      My dots only
-                    </label>
-                  </li>
-                </ul>
-              </form>
-              <form method="post" hx-post="/" hx-trigger="change" hx-target="body">
-                {% csrf_token %}
-                {{ team_filter_form.action }}
-                <ul>
-                  {% for node in team_tree %}
-                    {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
-                  {% endfor %}
-                </ul>
+                {{ drawer_filter_form.action }}
+                {% include "app/_team_tree_with_toggle.html" with toggle_field=drawer_filter_form.enabled toggle_label="My dots only" team_tree=team_tree selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
               </form>
 
               <form method="post" action="{% url 'logout' %}" class="drawer-logout">
