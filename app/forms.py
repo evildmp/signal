@@ -83,6 +83,22 @@ class DotEditorForm(forms.Form):
                 (str(team.id), team.name) for team in visible_teams
             ]
 
+    @staticmethod
+    def _normalize_free_text(raw_text, selected_values):
+        selected_set = {value.casefold() for value in (selected_values or [])}
+        seen = set()
+        normalized_parts = []
+        for part in (raw_text or "").split(","):
+            trimmed = part.strip()
+            if not trimmed:
+                continue
+            folded = trimmed.casefold()
+            if folded in selected_set or folded in seen:
+                continue
+            seen.add(folded)
+            normalized_parts.append(trimmed)
+        return ", ".join(normalized_parts)
+
     def clean(self):
         cleaned_data = super().clean()
         selected_team_ids = cleaned_data.get("team_ids") or []
@@ -90,6 +106,15 @@ class DotEditorForm(forms.Form):
         # If no team destination is selected, treat the dot as private.
         if not cleaned_data.get("private") and not selected_team_ids:
             cleaned_data["private"] = True
+
+        cleaned_data["feeling_free_text"] = self._normalize_free_text(
+            cleaned_data.get("feeling_free_text", ""),
+            cleaned_data.get("feeling", []),
+        )
+        cleaned_data["action_sentiment_free_text"] = self._normalize_free_text(
+            cleaned_data.get("action_sentiment_free_text", ""),
+            cleaned_data.get("action_sentiment", []),
+        )
 
         return cleaned_data
 

@@ -237,3 +237,40 @@ def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_exp
         browser.close()
 
     assert not Dot.objects.filter(identifier=dot.identifier).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_saving_dot_updates_published_label_without_reload(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+    dot = Dot.objects.create(x=63, y=26)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+        page.evaluate(
+            "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
+            [dot.identifier, str(dot.claim_token)],
+        )
+        page.reload()
+
+        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        dot_locator.click()
+
+        dialog = page.locator("dialog#dot-editor-dialog")
+        expect(dialog).to_be_visible()
+        dialog.get_by_text("happy", exact=True).click()
+        dialog.get_by_label("Show my name").check()
+        dialog.get_by_role("button", name="Save").click()
+
+        label = page.locator(f'.signal-dot-published-label[data-dot-identifier="{dot.identifier}"]')
+        expect(label).to_be_visible()
+        expect(label).to_contain_text("jerry")
+        expect(label).to_contain_text("happy")
+
+        browser.close()

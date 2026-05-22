@@ -17,6 +17,73 @@ def user_can_manage_dot(request, dot, claim_token=None):
     return dot.owner_user_id == request.user.id or str(dot.claim_token) == token
 
 
+def build_dot_label_position_class(dot):
+    label_y = "below" if dot.y > 80 else "above"
+    if dot.x < 20:
+        label_x = "right"
+    elif dot.x > 80:
+        label_x = "left"
+    else:
+        label_x = "center"
+
+    if label_x != "center":
+        label_y = "side"
+
+    return f"signal-dot-label--{label_y} signal-dot-label--x-{label_x}"
+
+
+def _split_label_values(value):
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _dedupe_label_values(values):
+    deduped = []
+    seen = set()
+
+    for value in values:
+        normalized = value.strip()
+        if not normalized:
+            continue
+        key = normalized.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+
+    return deduped
+
+
+def build_published_label_groups(dot):
+    feeling_values = _dedupe_label_values(
+        list(dot.feeling) + _split_label_values(dot.feeling_free_text)
+    )
+    action_values = _dedupe_label_values(
+        list(dot.action_sentiment) + _split_label_values(dot.action_sentiment_free_text)
+    )
+
+    return {
+        "username": dot.owner_user.username if dot.owner_user else "",
+        "feelings": ", ".join(feeling_values),
+        "actions": ", ".join(action_values),
+    }
+
+
+def build_published_label_parts(dot):
+    groups = build_published_label_groups(dot)
+    parts = []
+
+    if groups["username"]:
+        parts.append(groups["username"])
+    if groups["feelings"]:
+        parts.append(groups["feelings"])
+    if groups["actions"]:
+        parts.append(groups["actions"])
+
+    return parts
+
+
 def build_team_tree(teams):
     nodes_by_id = {
         team.id: {
@@ -84,13 +151,17 @@ def home(request):
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     if selected_team_ids:
-        dots = (
+        dots = list(
             Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
             .distinct()
             .order_by("identifier")
         )
+        for dot in dots:
+            dot.published_label_groups = build_published_label_groups(dot)
+            dot.published_label_parts = build_published_label_parts(dot)
+            dot.published_label_class = build_dot_label_position_class(dot)
     else:
-        dots = Dot.objects.none()
+        dots = []
 
     return render(
         request,
@@ -137,19 +208,7 @@ def create_dot(request):
         f'title="{dot.identifier}"></span>'
     )
 
-    # Determine label position class
-    label_y = "below" if dot.y > 80 else "above"
-    if dot.x < 20:
-        label_x = "right"
-    elif dot.x > 80:
-        label_x = "left"
-    else:
-        label_x = "center"
-
-    # When label goes left/right, always use "center" vertical mode (side labels are vertically centered)
-    if label_x != "center":
-        label_y = "side"
-    label_class = f"signal-dot-label signal-dot-label--{label_y} signal-dot-label--x-{label_x}"
+    label_class = f"signal-dot-label {build_dot_label_position_class(dot)}"
 
     notification_html = (
         f'<span class="{label_class}"'
@@ -234,7 +293,17 @@ def dot_edit(request, identifier):
                     "action_sentiment_free_text",
                 ]
             )
-            return HttpResponse("")
+
+            payload = {
+                "identifier": dot.identifier,
+                "ownedByUser": dot.owner_user_id == request.user.id,
+                "labelParts": build_published_label_parts(dot),
+                "labelGroups": build_published_label_groups(dot),
+                "labelClass": build_dot_label_position_class(dot),
+            }
+            response = HttpResponse("")
+            response["HX-Trigger"] = json.dumps({"dotUpdated": payload})
+            return response
         else:
             selected_team_ids = {
                 int(team_id)

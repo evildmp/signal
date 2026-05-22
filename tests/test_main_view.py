@@ -2,6 +2,7 @@ import re
 
 import pytest
 from django.contrib.auth import get_user_model
+import re
 
 from datetime import timedelta
 
@@ -134,3 +135,108 @@ def test_main_view_marks_owner_related_dot_as_claimed_without_token(
     )
     assert match is not None
     assert "signal-dot--claimed" in match.group(1)
+
+
+@pytest.mark.django_db
+def test_main_view_renders_published_name_label_when_owner_relation_exists(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=40, y=60, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        re.search(
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*jerry.*</span>',
+            content,
+            re.IGNORECASE | re.DOTALL,
+        )
+        is not None
+    )
+
+
+@pytest.mark.django_db
+def test_main_view_omits_published_name_label_when_owner_relation_is_null(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=40, y=60)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        re.search(
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*jerry.*</span>',
+            content,
+            re.IGNORECASE | re.DOTALL,
+        )
+        is None
+    )
+
+
+@pytest.mark.django_db
+def test_main_view_renders_sentiment_labels_for_published_dot(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(
+        x=40,
+        y=60,
+        owner_user=jerry_with_explicit_teams,
+        feeling=["happy"],
+        feeling_free_text="steady",
+        action_sentiment=["I need help"],
+        action_sentiment_free_text="Need a chat",
+    )
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert (
+        re.search(
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*happy.*steady.*I need help.*Need a chat.*</span>',
+            content,
+            re.IGNORECASE | re.DOTALL,
+        )
+        is not None
+    )
+
+
+@pytest.mark.django_db
+def test_main_view_deduplicates_sentiment_labels_when_free_text_repeats_selected_values(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(
+        x=40,
+        y=60,
+        owner_user=jerry_with_explicit_teams,
+        feeling=["happy"],
+        feeling_free_text="happy, steady",
+        action_sentiment=["I need help"],
+        action_sentiment_free_text="I need help, Need a chat",
+    )
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'data-dot-identifier="{dot.identifier}"' in content
+    assert "happy, steady" in content
+    assert "I need help, Need a chat" in content
+    assert "happy, happy" not in content.lower()
+    assert "i need help, i need help" not in content.lower()

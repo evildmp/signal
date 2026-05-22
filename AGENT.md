@@ -18,6 +18,8 @@ You are not permitted to act on a plan without my explicit go-ahead.
 
 Commit messages are in the past tense.
 
+You will not use numbered lists in your responses, because they are irritating.
+
 ### Initial data
 
 We'll need an initial_data file, which could be Python, YAML or JSON, so that while developing we can have some consistent data to work with.

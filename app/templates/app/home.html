@@ -92,6 +92,23 @@
                   style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
                   title="{{ dot.identifier }}"
                 ></span>
+                {% if dot.published_label_parts %}
+                  <span
+                    class="signal-dot-published-label {{ dot.published_label_class }}"
+                    data-dot-identifier="{{ dot.identifier }}"
+                    style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
+                  >
+                    {% if dot.published_label_groups.username %}
+                      <span class="signal-dot-published-username">{{ dot.published_label_groups.username }}</span>
+                    {% endif %}
+                    {% if dot.published_label_groups.feelings %}
+                      <span class="signal-dot-published-feelings">{{ dot.published_label_groups.feelings }}</span>
+                    {% endif %}
+                    {% if dot.published_label_groups.actions %}
+                      <span class="signal-dot-published-actions">{{ dot.published_label_groups.actions }}</span>
+                    {% endif %}
+                  </span>
+                {% endif %}
               {% endfor %}
             </section>
             <div id="dot-editor-host"></div>
@@ -196,6 +213,43 @@
           };
         }
 
+        function labelPositionClass(x, y) {
+          var labelY = y > 80 ? 'below' : 'above';
+          var labelX = 'center';
+          if (x < 20) {
+            labelX = 'right';
+          } else if (x > 80) {
+            labelX = 'left';
+          }
+
+          if (labelX !== 'center') {
+            labelY = 'side';
+          }
+
+          return 'signal-dot-label--' + labelY + ' signal-dot-label--x-' + labelX;
+        }
+
+        function labelForIdentifier(identifier) {
+          return document.querySelector('.signal-dot-published-label[data-dot-identifier="' + identifier + '"]');
+        }
+
+        function applyLabelPosition(label, x, y) {
+          if (!label) return;
+          label.style.left = x + '%';
+          label.style.bottom = y + '%';
+          label.classList.remove(
+            'signal-dot-label--above',
+            'signal-dot-label--below',
+            'signal-dot-label--side',
+            'signal-dot-label--x-left',
+            'signal-dot-label--x-right',
+            'signal-dot-label--x-center'
+          );
+          labelPositionClass(x, y).split(' ').forEach(function (klass) {
+            label.classList.add(klass);
+          });
+        }
+
         function endDrag() {
           if (!dragState) return;
           document.removeEventListener('mousemove', onDragMove);
@@ -213,6 +267,7 @@
 
           finishedDrag.dot.style.left = snappedPosition.x + '%';
           finishedDrag.dot.style.bottom = snappedPosition.y + '%';
+          applyLabelPosition(labelForIdentifier(finishedDrag.dot.dataset.dotIdentifier), snappedPosition.x, snappedPosition.y);
 
           var claimToken = finishedDrag.claimToken || '';
 
@@ -239,6 +294,7 @@
           dragState.lastPosition = position;
           dragState.dot.style.left = position.x.toFixed(2) + '%';
           dragState.dot.style.bottom = position.y.toFixed(2) + '%';
+          applyLabelPosition(labelForIdentifier(dragState.dot.dataset.dotIdentifier), position.x, position.y);
         }
 
         function onDragEnd() {
@@ -318,11 +374,62 @@
             dot.remove();
           }
 
+          var label = labelForIdentifier(identifier);
+          if (label) {
+            label.remove();
+          }
+
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
           if (tokens[identifier]) {
             delete tokens[identifier];
             localStorage.setItem('dotTokens', JSON.stringify(tokens));
           }
+        });
+
+        document.body.addEventListener('dotUpdated', function (e) {
+          if (!e.detail || !e.detail.identifier) return;
+
+          var identifier = e.detail.identifier;
+          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+          if (!dot) return;
+
+          dot.dataset.ownedByUser = e.detail.ownedByUser ? '1' : '0';
+          updateClaimedDotClasses();
+
+          var label = labelForIdentifier(identifier);
+          var groups = e.detail.labelGroups || {};
+          var hasGroups = !!(groups.username || groups.feelings || groups.actions);
+          if (!hasGroups) {
+            if (label) {
+              label.remove();
+            }
+            return;
+          }
+
+          if (!label) {
+            label = document.createElement('span');
+            label.className = 'signal-dot-published-label';
+            label.dataset.dotIdentifier = identifier;
+            dot.insertAdjacentElement('afterend', label);
+          }
+
+          label.innerHTML = '';
+
+          function appendPart(className, value) {
+            if (!value) return;
+            var item = document.createElement('span');
+            item.className = className;
+            item.textContent = value;
+            label.appendChild(item);
+          }
+
+          appendPart('signal-dot-published-username', groups.username || '');
+          appendPart('signal-dot-published-feelings', groups.feelings || '');
+          appendPart('signal-dot-published-actions', groups.actions || '');
+
+          var x = parseFloat(dot.style.left);
+          var y = parseFloat(dot.style.bottom);
+          applyLabelPosition(label, x, y);
         });
       })();
     </script>

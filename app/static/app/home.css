@@ -127,6 +127,7 @@
 
 .signal-dot--claimed {
   background: #e95420;
+  z-index: 12;
 }
 
 .signal-dot--claimed::after {
@@ -221,6 +222,33 @@
 
 .signal-dot-label .team-names {
   font-weight: 600;
+}
+
+.signal-dot-published-label {
+  position: absolute;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  align-items: flex-start;
+  max-width: 12rem;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  color: #333;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #d7d7d7;
+  border-radius: 3px;
+  padding: 0.08rem 0.3rem;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.signal-dot-published-username {
+  font-weight: 600;
+}
+
+.signal-dot-published-feelings,
+.signal-dot-published-actions {
+  white-space: nowrap;
 }
 
 @keyframes signal-dot-label-fade {
