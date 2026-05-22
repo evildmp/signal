@@ -254,6 +254,17 @@
   gap: 0.75rem;
 }
 
+.dot-editor-publish-section {
+  display: grid;
+  gap: 0.2rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #cdcdcd;
+}
+
+.dot-editor-section-label {
+  margin: 0;
+}
+
 .dot-editor-team-tree ul {
   margin: 0;
   list-style: none;
@@ -413,7 +424,7 @@
   cursor: default;
   font-size: 0.85rem;
   line-height: 1.14;
-  color: #666;
+  color: #444;
   margin: 0;
   padding: 0;
 }

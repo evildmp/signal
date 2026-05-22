@@ -43,19 +43,21 @@
       {% endfor %}
     </div>
 
-    <p class="p-text--small">Publish to:</p>
-    <div class="dot-editor-team-tree">
-      <ul>
-        <li>
-          <label for="{{ form.private.id_for_label }}">
-            {{ form.private }}
-            Private
-          </label>
-        </li>
-        {% for node in team_tree %}
-          {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
-        {% endfor %}
-      </ul>
+    <div class="dot-editor-publish-section">
+      <p class="p-text--small dot-editor-section-label">Publish to:</p>
+      <div class="dot-editor-team-tree">
+        <ul>
+          <li>
+            <label for="{{ form.private.id_for_label }}">
+              {{ form.private }}
+              Private
+            </label>
+          </li>
+          {% for node in team_tree %}
+            {% include "app/_team_tree.html" with node=node selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
+          {% endfor %}
+        </ul>
+      </div>
     </div>
     {{ form.team_ids.errors }}
     {% if form.errors %}
