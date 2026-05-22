@@ -119,9 +119,9 @@ def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_te
         f"/dot/{dot.identifier}/edit/",
         {
             "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
-            "feeling": ["happy", "calm"],
-            "feeling_free_text": "a little uncertain",
-            "action_sentiment": ["I need help"],
+            "feeling": ["happy"],
+            "feeling_free_text": "",
+            "action_sentiment": [],
             "action_sentiment_free_text": "Could use a quick chat",
             "include_name": "on",
         },
@@ -132,11 +132,152 @@ def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_te
 
     dot.refresh_from_db()
     assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["deep_red"].id}
-    assert dot.feeling == ["happy", "calm"]
-    assert dot.feeling_free_text == "a little uncertain"
-    assert dot.action_sentiment == ["I need help"]
+    assert dot.feeling == ["happy"]
+    assert dot.feeling_free_text == ""
+    assert dot.action_sentiment == []
     assert dot.action_sentiment_free_text == "Could use a quick chat"
     assert dot.owner_user == jerry_with_explicit_teams
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_normalizes_free_text_by_removing_selected_sentiment_duplicates(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy"],
+            "feeling_free_text": "happy, HAPPY",
+            "action_sentiment": ["I need help"],
+            "action_sentiment_free_text": "I need help, i need help",
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+    dot.refresh_from_db()
+    assert dot.feeling == ["happy"]
+    assert dot.feeling_free_text == ""
+    assert dot.action_sentiment == ["I need help"]
+    assert dot.action_sentiment_free_text == ""
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_rejects_multiple_feelings(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy", "calm"],
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Choose only one feeling, either from the list or manual text." in content
+
+    dot.refresh_from_db()
+    assert dot.feeling == []
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["blue"].id}
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_rejects_feeling_selection_with_manual_text(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy"],
+            "feeling_free_text": "steady",
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Choose only one feeling, either from the list or manual text." in content
+
+    dot.refresh_from_db()
+    assert dot.feeling == []
+    assert dot.feeling_free_text == ""
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["blue"].id}
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_rejects_multiple_action_sentiments(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "action_sentiment": ["I need help", "I would love to talk about this"],
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Choose only one action sentiment, either from the list or manual text." in content
+
+    dot.refresh_from_db()
+    assert dot.action_sentiment == []
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["blue"].id}
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_rejects_action_sentiment_selection_with_manual_text(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "action_sentiment": ["I need help"],
+            "action_sentiment_free_text": "Could use a quick chat",
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Choose only one action sentiment, either from the list or manual text." in content
+
+    dot.refresh_from_db()
+    assert dot.action_sentiment == []
+    assert dot.action_sentiment_free_text == ""
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["blue"].id}
 
 
 @pytest.mark.django_db

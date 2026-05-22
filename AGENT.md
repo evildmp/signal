@@ -103,7 +103,7 @@ Another is a list of feelings or wishes connected to how they related to others,
 
 * I wish I could talk to someone
 * I need help
-* I'd love to talk about this
+* I'd love to talk about it
 
 And once again, a free text option.
 

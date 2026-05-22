@@ -99,6 +99,12 @@ class DotEditorForm(forms.Form):
             normalized_parts.append(trimmed)
         return ", ".join(normalized_parts)
 
+    @staticmethod
+    def _combined_sentiment_count(selected_values, free_text):
+        selected_count = len(selected_values or [])
+        free_text_count = 1 if (free_text or "").strip() else 0
+        return selected_count + free_text_count
+
     def clean(self):
         cleaned_data = super().clean()
         selected_team_ids = cleaned_data.get("team_ids") or []
@@ -115,6 +121,20 @@ class DotEditorForm(forms.Form):
             cleaned_data.get("action_sentiment_free_text", ""),
             cleaned_data.get("action_sentiment", []),
         )
+
+        if self._combined_sentiment_count(
+            cleaned_data.get("feeling", []),
+            cleaned_data.get("feeling_free_text", ""),
+        ) > 1:
+            message = "Choose only one feeling, either from the list or manual text."
+            self.add_error(None, message)
+
+        if self._combined_sentiment_count(
+            cleaned_data.get("action_sentiment", []),
+            cleaned_data.get("action_sentiment_free_text", ""),
+        ) > 1:
+            message = "Choose only one action sentiment, either from the list or manual text."
+            self.add_error(None, message)
 
         return cleaned_data
 

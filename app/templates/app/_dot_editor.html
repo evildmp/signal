@@ -210,10 +210,7 @@
       function addValue(value) {
         var trimmed = value.trim();
         if (!trimmed) return;
-        var values = getValues();
-        if (hasValue(values, trimmed)) return;
-        values.push(trimmed);
-        setValues(values);
+        setValues([trimmed]);
         render();
       }
 
