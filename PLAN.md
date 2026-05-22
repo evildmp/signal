@@ -20,6 +20,8 @@
 
 10. [x] Add owned-dot deletion and repositioning: delete owned dots and drag to move them.
 
-11. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
+11. [ ] Add published-dot label display: show name label only when enabled, render selected sentiments/free text clearly, and keep labels readable without breaking click/drag interactions.
 
-12. [ ] Harden and verify: seed determinism, anonymity guarantees, responsive drawer behaviour, and full story coverage.
+12. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
+
+13. [ ] Harden and verify: seed determinism, anonymity guarantees, responsive drawer behaviour, and full story coverage.

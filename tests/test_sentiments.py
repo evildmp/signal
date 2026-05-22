@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from app.models import ACTION_SENTIMENTS, Dot, FEELINGS
@@ -93,15 +94,16 @@ def test_dot_can_have_action_sentiment_free_text():
 
 
 @pytest.mark.django_db
-def test_dot_include_name_defaults_to_false():
+def test_dot_owner_user_defaults_to_null():
     dot = Dot.objects.create(x=50, y=50)
-    assert dot.include_name is False
+    assert dot.owner_user is None
 
 
 @pytest.mark.django_db
-def test_dot_can_set_include_name_true():
+def test_dot_can_set_owner_user():
+    user = get_user_model().objects.create_user(username="alice", password="alice")
     dot = Dot.objects.create(x=50, y=50)
-    dot.include_name = True
+    dot.owner_user = user
     dot.save()
     dot.refresh_from_db()
-    assert dot.include_name is True
+    assert dot.owner_user == user
