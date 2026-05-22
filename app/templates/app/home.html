@@ -146,6 +146,11 @@
           });
         }
 
+        function claimTokenForIdentifier(identifier) {
+          var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+          return tokens[identifier] || '';
+        }
+
         // Initial mark
         updateClaimedDotClasses();
 
@@ -193,8 +198,7 @@
           finishedDrag.dot.style.left = snappedPosition.x + '%';
           finishedDrag.dot.style.bottom = snappedPosition.y + '%';
 
-          var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-          var claimToken = tokens[finishedDrag.dot.dataset.dotIdentifier] || '';
+          var claimToken = finishedDrag.claimToken || '';
 
           suppressGridClickUntil = Date.now() + 300;
           htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
@@ -230,12 +234,16 @@
             var dot = e.target.closest('.signal-dot');
             if (!dot) return;
 
+            var claimToken = claimTokenForIdentifier(dot.dataset.dotIdentifier);
+            if (!claimToken) return;
+
             dragState = {
               dot: dot,
               didMove: false,
               startClientX: e.clientX,
               startClientY: e.clientY,
-              lastPosition: null
+              lastPosition: null,
+              claimToken: claimToken
             };
 
             document.addEventListener('mousemove', onDragMove);
@@ -280,6 +288,22 @@
           if (e.detail) {
             var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
             tokens[e.detail.identifier] = e.detail.token;
+            localStorage.setItem('dotTokens', JSON.stringify(tokens));
+          }
+        });
+
+        document.body.addEventListener('dotDeleted', function (e) {
+          if (!e.detail || !e.detail.identifier) return;
+
+          var identifier = e.detail.identifier;
+          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+          if (dot) {
+            dot.remove();
+          }
+
+          var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+          if (tokens[identifier]) {
+            delete tokens[identifier];
             localStorage.setItem('dotTokens', JSON.stringify(tokens));
           }
         });

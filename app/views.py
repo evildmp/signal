@@ -185,6 +185,22 @@ def move_dot(request, identifier):
 
 
 @login_required
+@require_POST
+def delete_dot(request, identifier):
+    dot = get_object_or_404(Dot, identifier=identifier)
+
+    claim_token = request.POST.get("claim_token", "")
+    if str(dot.claim_token) != claim_token:
+        return HttpResponse(status=403)
+
+    dot.delete()
+
+    response = HttpResponse("")
+    response["HX-Trigger"] = json.dumps({"dotDeleted": {"identifier": identifier}})
+    return response
+
+
+@login_required
 def dot_edit(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
     visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))

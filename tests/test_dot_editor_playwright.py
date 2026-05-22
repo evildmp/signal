@@ -25,7 +25,7 @@ def test_clicking_dot_opens_editor_dialog_over_grid(live_server, jerry_with_expl
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
         expect(dialog).to_have_attribute("open", "")
-        expect(dialog).to_contain_text(dot.identifier)
+        expect(dialog).not_to_contain_text(dot.identifier)
 
         browser.close()
 
@@ -199,3 +199,41 @@ def test_unchecking_all_teams_auto_selects_private(live_server, jerry_with_expli
 
     dot.refresh_from_db()
     assert set(dot.teams.values_list("id", flat=True)) == set()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+    dot = Dot.objects.create(x=63, y=26)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+        page.evaluate(
+            "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
+            [dot.identifier, str(dot.claim_token)],
+        )
+        page.reload()
+
+        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        expect(dot_locator).to_be_visible()
+        dot_locator.click()
+
+        dialog = page.locator("dialog#dot-editor-dialog")
+        expect(dialog).to_be_visible()
+        expect(dialog.get_by_role("button", name="Delete")).to_be_visible()
+
+        dialog.get_by_role("button", name="Delete").click()
+
+        expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
+        expect(page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')).to_have_count(0)
+
+        browser.close()
+
+    assert not Dot.objects.filter(identifier=dot.identifier).exists()

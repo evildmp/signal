@@ -16,7 +16,7 @@ def test_dot_editor_endpoint_returns_dialog_for_clicked_dot(client, jerry_with_e
     content = response.content.decode()
     assert '<dialog id="dot-editor-dialog"' in content
     assert 'id="dot-editor-form"' in content
-    assert dot.identifier in content
+    assert 'data-dot-identifier=' not in content
 
 
 @pytest.mark.django_db
@@ -137,3 +137,36 @@ def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_te
     assert dot.action_sentiment == ["I need help"]
     assert dot.action_sentiment_free_text == "Could use a quick chat"
     assert dot.include_name is True
+
+
+@pytest.mark.django_db
+def test_dot_delete_endpoint_deletes_owned_dot(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/delete/",
+        {"claim_token": str(dot.claim_token)},
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+    assert not Dot.objects.filter(identifier=dot.identifier).exists()
+
+
+@pytest.mark.django_db
+def test_dot_delete_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/delete/",
+        {"claim_token": "not-the-right-token"},
+    )
+
+    assert response.status_code == 403
+    assert Dot.objects.filter(identifier=dot.identifier).exists()

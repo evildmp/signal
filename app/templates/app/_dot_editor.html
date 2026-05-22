@@ -1,4 +1,4 @@
-<dialog id="dot-editor-dialog" data-dot-identifier="{{ dot.identifier }}" aria-label="Dot editor dialog" tabindex="-1">
+<dialog id="dot-editor-dialog" aria-label="Dot editor dialog" tabindex="-1">
   <form
     id="dot-editor-form"
     method="post"
@@ -8,13 +8,14 @@
     hx-swap="innerHTML"
   >
     {% csrf_token %}
+    <input type="hidden" name="claim_token" value="" />
     <h2 class="p-heading--5">Edit dot</h2>
 
     <div class="dot-editor-i-feel">
       <label>I feel</label>
       <div class="dot-editor-chip-field" data-chip-field="feeling_free_text">
         <div class="dot-editor-chip-list" data-chip-list-for="feeling_free_text"></div>
-        <input type="text" class="dot-editor-chip-input" data-chip-input-for="feeling_free_text" aria-label="Feeling free text" placeholder="select from the list below or add free text" />
+        <input type="text" class="dot-editor-chip-input" data-chip-input-for="feeling_free_text" aria-label="Feeling free text" placeholder="select from the list or add free text" />
       </div>
       {{ form.feeling_free_text.as_hidden }}
     </div>
@@ -30,7 +31,7 @@
     <div class="dot-editor-i-feel">
       <div class="dot-editor-chip-field" data-chip-field="action_sentiment_free_text">
         <div class="dot-editor-chip-list" data-chip-list-for="action_sentiment_free_text"></div>
-        <input type="text" class="dot-editor-chip-input" data-chip-input-for="action_sentiment_free_text" aria-label="Action sentiment free text" placeholder="What would you like? Select from the list below or add free text" />
+        <input type="text" class="dot-editor-chip-input" data-chip-input-for="action_sentiment_free_text" aria-label="Action sentiment free text" placeholder="What would you like? Select from the list or add free text" />
       </div>
       {{ form.action_sentiment_free_text.as_hidden }}
     </div>
@@ -41,6 +42,13 @@
           <span>{{ checkbox.choice_label }}</span>
         </label>
       {% endfor %}
+    </div>
+
+    <div class="dot-editor-name-section">
+      <label for="{{ form.include_name.id_for_label }}" class="p-text--small">
+        {{ form.include_name }}
+        Show my name
+      </label>
     </div>
 
     <div class="dot-editor-publish-section">
@@ -63,11 +71,15 @@
     {% if form.errors %}
       <p class="p-notification--negative">{{ form.errors }}</p>
     {% endif %}
-    <label for="{{ form.include_name.id_for_label }}" class="p-text--small">
-      {{ form.include_name }}
-      Include my name
-    </label>
     <div class="dot-editor-actions">
+      <button
+        type="button"
+        class="p-button--negative dot-editor-actions-delete"
+        data-delete-dot
+        hx-post="{% url 'delete_dot' dot.identifier %}"
+        hx-target="#dot-editor-host"
+        hx-swap="innerHTML"
+      >Delete</button>
       <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
       <button type="submit" class="p-button--positive">Save</button>
     </div>
@@ -81,7 +93,30 @@
 
     var privateCheckbox = form.querySelector('input[name="private"]');
     var teamCheckboxes = form.querySelectorAll('input[name="{{ team_field_name }}"]');
+    var claimTokenInput = form.querySelector('input[name="claim_token"]');
+    var deleteButton = form.querySelector('[data-delete-dot]');
     if (!privateCheckbox) return;
+
+    function getStoredClaimToken() {
+      try {
+        var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+        var match = form.getAttribute('hx-post').match(/^\/dot\/([^/]+)\/edit\/$/);
+        if (!match) return '';
+        return tokens[match[1]] || '';
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function syncClaimToken() {
+      if (!claimTokenInput) return;
+      var token = getStoredClaimToken();
+      claimTokenInput.value = token;
+      if (deleteButton) {
+        deleteButton.setAttribute('hx-vals', JSON.stringify({ claim_token: token }));
+        deleteButton.disabled = !token;
+      }
+    }
 
     function syncPrivateFromTeams() {
       var hasTeamSelection = Array.from(teamCheckboxes).some(function (checkbox) {
@@ -225,8 +260,11 @@
     form.querySelectorAll('.dot-editor-sentiment-picker[data-free-text-for]').forEach(wireSentimentPicker);
 
     form.addEventListener('submit', function () {
+      syncClaimToken();
       syncPrivateFromTeams();
       clearTeamsWhenPrivateChecked();
     });
+
+    syncClaimToken();
   })();
 </script>

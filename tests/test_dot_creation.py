@@ -273,3 +273,43 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
     from app.models import Dot as DotModel
     moved_dot = DotModel.objects.get(identifier=identifier)
     assert moved_dot.x != 25 or moved_dot.y != 75  # position should have changed
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dragging_not_owned_dot_does_nothing(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+    dot = Dot.objects.create(x=25, y=75)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        expect(dot_locator).to_be_visible()
+
+        token = page.evaluate(
+            "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
+            dot.identifier,
+        )
+        assert token is None
+
+        style_before = dot_locator.get_attribute("style")
+        dot_box = dot_locator.bounding_box()
+        page.mouse.move(dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
+        page.mouse.up()
+
+        style_after = dot_locator.get_attribute("style")
+        assert style_after == style_before
+
+        browser.close()
+
+    dot.refresh_from_db()
+    assert dot.x == 25
+    assert dot.y == 75

@@ -4,7 +4,7 @@
 
 2. [x] Model the core domain: hierarchical teams, explicit memberships, dots, team publication, claim tokens, identifier generation, implied ancestor membership, and seven-day fade logic.
 
-3. [ ] Extend the domain model to cover sentiments: two lists (feelings; relational wishes), free-text option, and association with dots.
+3. [x] Extend the domain model to cover sentiments: two lists (feelings; relational wishes), free-text option, and association with dots.
 
 4. [x] Add a seed data management command: organisation tree and users.
 
@@ -16,8 +16,10 @@
 
 8. [x] Add owned-dot behaviour: create by clicking/tapping the grid, publish to currently selected teams, persist claim tokens client-side, and visually pulse owned dots.
 
-9. [ ] Add dot management: edit/delete, show identifier, toggle published name, change published teams within the user's allowed hierarchy, manage sentiments/free text, and drag-to-move.
+9. [x] Add dot editing: edit owned dots, toggle "include my name", change published teams within the user's allowed hierarchy, and manage sentiments/free text.
 
-10. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
+10. [x] Add owned-dot deletion and repositioning: delete owned dots and drag to move them.
 
-11. [ ] Harden and verify: seed determinism, anonymity guarantees, responsive drawer behaviour, and full story coverage.
+11. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
+
+12. [ ] Harden and verify: seed determinism, anonymity guarantees, responsive drawer behaviour, and full story coverage.
