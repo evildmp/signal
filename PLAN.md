@@ -8,19 +8,19 @@
 
 4. [x] Add a seed data management command: organisation tree and users.
 
-5. [ ] Extend seed data to produce realistic dots matching the brief's counts and percentages (4-12 dots per user over the last week, 66% explicit teams, 70% anonymous, 40% feelings, 20% relational wishes).
+5. [x] Implement authentication as the first end-to-end slice so the rest of the story can be verified in the browser.
 
-6. [x] Implement authentication as the first end-to-end slice so the rest of the story can be verified in the browser.
+6. [x] Build the main view and drawer: default team selection for explicit memberships, display of implicit parent teams, Organisation descendant filtering, and My dots only clearing other selections.
 
-7. [x] Build the main view and drawer: default team selection for explicit memberships, display of implicit parent teams, Organisation descendant filtering, and My dots only clearing other selections.
+7. [x] Add owned-dot behaviour: create by clicking/tapping the grid, publish to currently selected teams, persist claim tokens client-side, and visually pulse owned dots.
 
-8. [x] Add owned-dot behaviour: create by clicking/tapping the grid, publish to currently selected teams, persist claim tokens client-side, and visually pulse owned dots.
+8. [x] Add dot editing: edit owned dots, toggle "include my name", change published teams within the user's allowed hierarchy, and manage sentiments/free text (including one sentiment per field).
 
-9. [x] Add dot editing: edit owned dots, toggle "include my name", change published teams within the user's allowed hierarchy, and manage sentiments/free text.
+9. [x] Add owned-dot deletion and repositioning: delete owned dots and drag to move them.
 
-10. [x] Add owned-dot deletion and repositioning: delete owned dots and drag to move them.
+10. [x] Add published-dot label display: show name label only when enabled, render selected sentiments/free text clearly, and keep labels readable without breaking click/drag interactions.
 
-11. [ ] Add published-dot label display: show name label only when enabled, render selected sentiments/free text clearly, and keep labels readable without breaking click/drag interactions.
+11. [ ] Extend seed data to produce realistic dots matching the brief's counts and percentages (4-12 dots per user over the last week, 66% explicit teams, 70% anonymous, 40% feelings, 20% relational wishes).
 
 12. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
 
