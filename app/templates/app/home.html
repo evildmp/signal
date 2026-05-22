@@ -83,8 +83,9 @@
               <span class="signal-axis signal-axis--y-bottom p-text--small">Settled</span>
               {% for dot in dots %}
                 <span
-                  class="signal-dot"
+                  class="signal-dot{% if dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
                   data-dot-identifier="{{ dot.identifier }}"
+                  data-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
                   hx-get="{% url 'dot_edit' dot.identifier %}"
                   hx-target="#dot-editor-host"
                   hx-swap="innerHTML"
@@ -138,7 +139,8 @@
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
           document.querySelectorAll('.signal-dot').forEach(function(dot) {
             var id = dot.dataset.dotIdentifier;
-            if (tokens[id]) {
+            var isOwnedByUser = dot.dataset.ownedByUser === '1';
+            if (isOwnedByUser || tokens[id]) {
               dot.classList.add('signal-dot--claimed');
             } else {
               dot.classList.remove('signal-dot--claimed');
@@ -163,6 +165,20 @@
         document.body.addEventListener('htmx:afterSwap', function (e) {
           if (e.detail.target && e.detail.target.id === 'signal-grid') {
             setTimeout(updateClaimedDotClasses, 0);
+          }
+        });
+
+        document.body.addEventListener('htmx:configRequest', function (e) {
+          if (!e.detail || !e.detail.path || e.detail.verb !== 'get') return;
+
+          var match = e.detail.path.match(/^\/dot\/([^/]+)\/edit\/$/);
+          if (!match) return;
+
+          var identifier = match[1];
+          var token = claimTokenForIdentifier(identifier);
+          if (token) {
+            e.detail.parameters = e.detail.parameters || {};
+            e.detail.parameters.claim_token = token;
           }
         });
 
@@ -235,7 +251,8 @@
             if (!dot) return;
 
             var claimToken = claimTokenForIdentifier(dot.dataset.dotIdentifier);
-            if (!claimToken) return;
+            var isOwnedByUser = dot.dataset.ownedByUser === '1';
+            if (!claimToken && !isOwnedByUser) return;
 
             dragState = {
               dot: dot,

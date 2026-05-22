@@ -185,13 +185,19 @@ class Dot(models.Model):
 	y = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
 	identifier = models.CharField(max_length=64, unique=True, default=generate_dot_identifier)
 	created_at = models.DateTimeField(auto_now_add=True)
+	owner_user = models.ForeignKey(
+		get_user_model(),
+		null=True,
+		blank=True,
+		on_delete=models.SET_NULL,
+		related_name="owned_dots",
+	)
 	teams = models.ManyToManyField(Team, related_name="dots")
 	claim_token = models.UUIDField(default=uuid.uuid4, editable=False)
 	feeling = models.JSONField(default=list, blank=True)
 	action_sentiment = models.JSONField(default=list, blank=True)
 	feeling_free_text = models.TextField(blank=True, default="")
 	action_sentiment_free_text = models.TextField(blank=True, default="")
-	include_name = models.BooleanField(default=False)
 
 	def clean(self):
 		super().clean()

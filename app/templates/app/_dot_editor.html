@@ -1,4 +1,4 @@
-<dialog id="dot-editor-dialog" aria-label="Dot editor dialog" tabindex="-1">
+<dialog id="dot-editor-dialog" aria-label="Dot editor dialog" tabindex="-1" data-dot-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}">
   <form
     id="dot-editor-form"
     method="post"
@@ -111,10 +111,11 @@
     function syncClaimToken() {
       if (!claimTokenInput) return;
       var token = getStoredClaimToken();
+      var isOwnedByUser = form.closest('#dot-editor-dialog').dataset.dotOwnedByUser === '1';
       claimTokenInput.value = token;
       if (deleteButton) {
         deleteButton.setAttribute('hx-vals', JSON.stringify({ claim_token: token }));
-        deleteButton.disabled = !token;
+        deleteButton.disabled = !token && !isOwnedByUser;
       }
     }
 

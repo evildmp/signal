@@ -69,7 +69,7 @@ class DotEditorForm(forms.Form):
     def __init__(self, *args, dot=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if dot is not None:
-            self.initial["include_name"] = dot.include_name
+            self.initial["include_name"] = dot.owner_user_id is not None
             self.initial["feeling"] = dot.feeling
             self.initial["feeling_free_text"] = dot.feeling_free_text
             self.initial["action_sentiment"] = dot.action_sentiment

@@ -12,6 +12,11 @@ from app.forms import DotEditorForm, DrawerFilterForm, MyDotsOnlyForm, TeamFilte
 from app.models import Dot, Team
 
 
+def user_can_manage_dot(request, dot, claim_token=None):
+    token = claim_token or ""
+    return dot.owner_user_id == request.user.id or str(dot.claim_token) == token
+
+
 def build_team_tree(teams):
     nodes_by_id = {
         team.id: {
@@ -165,7 +170,7 @@ def move_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
     claim_token = request.POST.get("claim_token", "")
-    if str(dot.claim_token) != claim_token:
+    if not user_can_manage_dot(request, dot, claim_token):
         return HttpResponse(status=403)
 
     try:
@@ -190,7 +195,7 @@ def delete_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
     claim_token = request.POST.get("claim_token", "")
-    if str(dot.claim_token) != claim_token:
+    if not user_can_manage_dot(request, dot, claim_token):
         return HttpResponse(status=403)
 
     dot.delete()
@@ -203,6 +208,10 @@ def delete_dot(request, identifier):
 @login_required
 def dot_edit(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
+    claim_token = request.POST.get("claim_token", "") if request.method == "POST" else request.GET.get("claim_token", "")
+    if not user_can_manage_dot(request, dot, claim_token):
+        return HttpResponse(status=403)
+
     visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))
     team_tree = build_team_tree(visible_teams)
 
@@ -211,14 +220,14 @@ def dot_edit(request, identifier):
         if form.is_valid():
             selected_team_ids = form.cleaned_team_ids()
             dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
-            dot.include_name = form.cleaned_data.get("include_name", False)
+            dot.owner_user = request.user if form.cleaned_data.get("include_name", False) else None
             dot.feeling = form.cleaned_data.get("feeling", [])
             dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
             dot.action_sentiment = form.cleaned_data.get("action_sentiment", [])
             dot.action_sentiment_free_text = form.cleaned_data.get("action_sentiment_free_text", "")
             dot.save(
                 update_fields=[
-                    "include_name",
+                    "owner_user",
                     "feeling",
                     "feeling_free_text",
                     "action_sentiment",

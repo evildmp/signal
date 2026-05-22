@@ -7,7 +7,7 @@ from app.models import Dot
 def test_dot_editor_endpoint_returns_dialog_for_clicked_dot(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=22, y=74)
+    dot = Dot.objects.create(x=22, y=74, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.get(f"/dot/{dot.identifier}/edit/")
@@ -43,7 +43,7 @@ def test_dot_editor_endpoint_returns_404_for_unknown_identifier(client, jerry_wi
 def test_dot_editor_post_updates_selected_teams(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=28, y=52)
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.post(
@@ -60,7 +60,7 @@ def test_dot_editor_post_updates_selected_teams(client, jerry_with_explicit_team
 def test_dot_editor_post_renders_form_errors_for_invalid_team_selection(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=61, y=39)
+    dot = Dot.objects.create(x=61, y=39, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.post(
@@ -78,7 +78,7 @@ def test_dot_editor_post_renders_form_errors_for_invalid_team_selection(client, 
 def test_dot_editor_post_with_no_team_selection_saves_as_private(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=48, y=22)
+    dot = Dot.objects.create(x=48, y=22, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.post(f"/dot/{dot.identifier}/edit/", {})
@@ -94,7 +94,7 @@ def test_dot_editor_post_with_no_team_selection_saves_as_private(client, jerry_w
 def test_dot_editor_endpoint_renders_sentiment_inputs(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=22, y=74)
+    dot = Dot.objects.create(x=22, y=74, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.get(f"/dot/{dot.identifier}/edit/")
@@ -112,7 +112,7 @@ def test_dot_editor_endpoint_renders_sentiment_inputs(client, jerry_with_explici
 def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
-    dot = Dot.objects.create(x=28, y=52)
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.post(
@@ -136,7 +136,44 @@ def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_te
     assert dot.feeling_free_text == "a little uncertain"
     assert dot.action_sentiment == ["I need help"]
     assert dot.action_sentiment_free_text == "Could use a quick chat"
-    assert dot.include_name is True
+    assert dot.owner_user == jerry_with_explicit_teams
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_clears_owner_user_when_show_my_name_is_unchecked(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy"],
+            "action_sentiment": ["I need help"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+    dot.refresh_from_db()
+    assert dot.owner_user is None
+
+
+@pytest.mark.django_db
+def test_dot_editor_endpoint_rejects_user_without_ownership(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get(f"/dot/{dot.identifier}/edit/")
+
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db
@@ -170,3 +207,47 @@ def test_dot_delete_endpoint_rejects_wrong_claim_token(client, jerry_with_explic
 
     assert response.status_code == 403
     assert Dot.objects.filter(identifier=dot.identifier).exists()
+
+
+@pytest.mark.django_db
+def test_dot_delete_endpoint_allows_owner_user_without_claim_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/delete/",
+        {},
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+    assert not Dot.objects.filter(identifier=dot.identifier).exists()
+
+
+@pytest.mark.django_db
+def test_dot_owner_user_can_edit_without_claim_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy"],
+            "action_sentiment": ["I need help"],
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+    dot.refresh_from_db()
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["deep_red"].id}
+    assert dot.owner_user == jerry_with_explicit_teams

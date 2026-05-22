@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from django.contrib.auth import get_user_model
 
@@ -111,3 +113,24 @@ def test_main_view_shows_only_recent_dots_for_selected_teams(client, jerry_with_
     assert response.status_code == 200
     returned_identifiers = {dot.identifier for dot in response.context["dots"]}
     assert returned_identifiers == {visible_dot.identifier}
+
+
+@pytest.mark.django_db
+def test_main_view_marks_owner_related_dot_as_claimed_without_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=40, y=60, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-identifier="{re.escape(dot.identifier)}"',
+        content,
+    )
+    assert match is not None
+    assert "signal-dot--claimed" in match.group(1)

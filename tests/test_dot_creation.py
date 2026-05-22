@@ -116,6 +116,19 @@ def test_move_dot_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit
     assert dot.y == 20
 
 
+@pytest.mark.django_db
+def test_move_dot_endpoint_allows_owner_user_without_claim_token(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+    dot = Dot.objects.create(x=10, y=20, owner_user=jerry_with_explicit_teams)
+
+    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64"})
+
+    assert response.status_code == 200
+    dot.refresh_from_db()
+    assert dot.x == 72
+    assert dot.y == 64
+
+
 @pytest.mark.django_db(transaction=True)
 def test_clicking_grid_places_a_dot_and_shows_notification(live_server, jerry_with_explicit_teams):
 
