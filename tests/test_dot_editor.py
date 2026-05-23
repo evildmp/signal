@@ -318,6 +318,37 @@ def test_dot_editor_endpoint_rejects_user_without_ownership(client, jerry_with_e
 
 
 @pytest.mark.django_db
+def test_dot_editor_endpoint_allows_ownership_token_header(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get(
+        f"/dot/{dot.identifier}/edit/",
+        HTTP_X_OWNERSHIP_TOKEN=str(dot.ownership_token),
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_dot_editor_endpoint_rejects_ownership_token_in_query_params(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get(
+        f"/dot/{dot.identifier}/edit/?ownership_token={dot.ownership_token}",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
 def test_dot_delete_endpoint_deletes_owned_dot(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 

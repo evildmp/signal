@@ -23,9 +23,14 @@ def user_can_manage_dot(request, dot, ownership_token=None):
 
 
 def request_ownership_token(request):
+    header_token = request.headers.get("X-Ownership-Token", "")
+    if header_token:
+        return header_token
+
     if request.method == "POST":
         return request.POST.get("ownership_token", "")
-    return request.GET.get("ownership_token", "")
+
+    return ""
 
 
 def build_dot_label_position_class_from_coordinates(x, y):

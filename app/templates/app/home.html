@@ -214,8 +214,8 @@
           var identifier = match[1];
           var token = ownershipTokenForIdentifier(identifier);
           if (token) {
-            e.detail.parameters = e.detail.parameters || {};
-            e.detail.parameters.ownership_token = token;
+            e.detail.headers = e.detail.headers || {};
+            e.detail.headers['X-Ownership-Token'] = token;
           }
         });
 
