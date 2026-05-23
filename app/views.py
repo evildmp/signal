@@ -173,12 +173,14 @@ def home(request):
     if my_dots_only:
         dots = list(
             Dot.objects.filter(owner_user=request.user, created_at__gte=visibility_cutoff)
+            .select_related("owner_user")
             .distinct()
             .order_by("identifier")
         )
     elif selected_team_ids:
         dots = list(
             Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
+            .select_related("owner_user")
             .distinct()
             .order_by("identifier")
         )

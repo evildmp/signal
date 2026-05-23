@@ -3,6 +3,8 @@ import re
 import pytest
 from django.contrib.auth import get_user_model
 import re
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from datetime import timedelta
 
@@ -26,6 +28,13 @@ def post_team_filters(client, team_ids):
             "team_ids": [str(team_id) for team_id in team_ids],
         },
     )
+
+
+def count_home_queries(client):
+    with CaptureQueriesContext(connection) as queries:
+        response = client.get("/")
+    assert response.status_code == 200
+    return len(queries)
 
 
 @pytest.mark.django_db
@@ -265,3 +274,22 @@ def test_main_view_deduplicates_sentiment_labels_when_free_text_repeats_selected
     assert "I need help, Need a chat" in content
     assert "happy, happy" not in content.lower()
     assert "i need help, i need help" not in content.lower()
+
+
+@pytest.mark.django_db
+def test_main_view_query_count_does_not_grow_with_number_of_owner_related_dots(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    baseline_dot = Dot.objects.create(x=10, y=20, owner_user=jerry_with_explicit_teams)
+    baseline_dot.teams.add(minimum_team_hierarchy["blue"])
+    baseline_query_count = count_home_queries(client)
+
+    for i in range(20):
+        dot = Dot.objects.create(x=(i + 11) % 100, y=(i + 21) % 100, owner_user=jerry_with_explicit_teams)
+        dot.teams.add(minimum_team_hierarchy["blue"])
+
+    expanded_query_count = count_home_queries(client)
+
+    assert expanded_query_count <= baseline_query_count + 2
