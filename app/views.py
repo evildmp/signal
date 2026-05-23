@@ -169,13 +169,14 @@ def home(request):
         my_dots_only = False
         selected_team_ids = explicit_team_ids
 
-    drawer_filter_form = DrawerFilterForm(
-        initial={
-            "enabled": my_dots_only,
-            "team_ids": [str(team_id) for team_id in selected_team_ids],
-        },
-        team_choices=team_choices,
-    )
+    if request.method != "POST":
+        drawer_filter_form = DrawerFilterForm(
+            initial={
+                "enabled": my_dots_only,
+                "team_ids": [str(team_id) for team_id in selected_team_ids],
+            },
+            team_choices=team_choices,
+        )
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     if my_dots_only:

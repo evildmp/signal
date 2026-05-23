@@ -109,6 +109,19 @@ def test_selecting_a_team_clears_my_dots_only(
 
 
 @pytest.mark.django_db
+def test_home_post_keeps_drawer_filter_form_bound(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    blue_team_id = minimum_team_hierarchy["blue"].id
+    response = post_team_filters(client, [blue_team_id])
+
+    assert response.status_code == 200
+    assert response.context["drawer_filter_form"].is_bound is True
+
+
+@pytest.mark.django_db
 def test_my_dots_only_shows_owned_dots_even_without_selected_teams(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
