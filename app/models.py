@@ -34,13 +34,22 @@ class Team(models.Model):
 			return self.filter(id__in=explicit_team_ids)
 
 		def visible_for_user(self, user, include_implicit=True):
-			explicit_teams = list(self.explicit_for_user(user))
+			explicit_team_ids = list(
+				self.explicit_for_user(user).values_list("id", flat=True)
+			)
 			if not include_implicit:
-				return self.filter(id__in=[team.id for team in explicit_teams])
+				return self.filter(id__in=explicit_team_ids)
 
-			all_team_ids = {team.id for team in explicit_teams}
-			for team in explicit_teams:
-				all_team_ids.update(team.ancestor_ids())
+			all_team_ids = set(explicit_team_ids)
+			parent_by_id = dict(
+				Team.objects.values_list("id", "parent_id")
+			)
+			for team_id in explicit_team_ids:
+				parent_id = parent_by_id.get(team_id)
+				while parent_id is not None:
+					all_team_ids.add(parent_id)
+					parent_id = parent_by_id.get(parent_id)
+
 			return self.filter(id__in=all_team_ids)
 
 	objects = TeamQuerySet.as_manager()
