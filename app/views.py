@@ -12,16 +12,21 @@ from app.forms import DotEditorForm, DrawerFilterForm, MyDotsOnlyForm, TeamFilte
 from app.models import Dot, Team
 
 
+LABEL_LEFT_EDGE_THRESHOLD = 20
+LABEL_RIGHT_EDGE_THRESHOLD = 80
+LABEL_TOP_EDGE_THRESHOLD = 80
+
+
 def user_can_manage_dot(request, dot, claim_token=None):
     token = claim_token or ""
     return dot.owner_user_id == request.user.id or str(dot.claim_token) == token
 
 
-def build_dot_label_position_class(dot):
-    label_y = "below" if dot.y > 80 else "above"
-    if dot.x < 20:
+def build_dot_label_position_class_from_coordinates(x, y):
+    label_y = "below" if y > LABEL_TOP_EDGE_THRESHOLD else "above"
+    if x < LABEL_LEFT_EDGE_THRESHOLD:
         label_x = "right"
-    elif dot.x > 80:
+    elif x > LABEL_RIGHT_EDGE_THRESHOLD:
         label_x = "left"
     else:
         label_x = "center"
@@ -30,6 +35,10 @@ def build_dot_label_position_class(dot):
         label_y = "side"
 
     return f"signal-dot-label--{label_y} signal-dot-label--x-{label_x}"
+
+
+def build_dot_label_position_class(dot):
+    return build_dot_label_position_class_from_coordinates(dot.x, dot.y)
 
 
 def _split_label_values(value):
@@ -181,6 +190,9 @@ def home(request):
             "drawer_filter_form": drawer_filter_form,
             "team_field_name": drawer_filter_form["team_ids"].html_name,
             "dots": dots,
+            "label_left_edge_threshold": LABEL_LEFT_EDGE_THRESHOLD,
+            "label_right_edge_threshold": LABEL_RIGHT_EDGE_THRESHOLD,
+            "label_top_edge_threshold": LABEL_TOP_EDGE_THRESHOLD,
         },
     )
 

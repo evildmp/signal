@@ -76,7 +76,15 @@
           </div>
           <div class="p-panel__content">
             <p class="p-text--small">Place a dot; select to edit; drag to move</p>
-            <section class="p-card signal-grid" aria-label="Signal grid" id="signal-grid" data-create-url="{% url 'create_dot' %}">
+            <section
+              class="p-card signal-grid"
+              aria-label="Signal grid"
+              id="signal-grid"
+              data-create-url="{% url 'create_dot' %}"
+              data-label-left-edge-threshold="{{ label_left_edge_threshold }}"
+              data-label-right-edge-threshold="{{ label_right_edge_threshold }}"
+              data-label-top-edge-threshold="{{ label_top_edge_threshold }}"
+            >
               <span class="signal-axis signal-axis--x-left p-text--small">Feeling bad</span>
               <span class="signal-axis signal-axis--x-right p-text--small">Feeling good</span>
               <span class="signal-axis signal-axis--y-top p-text--small">Aroused</span>
@@ -146,6 +154,17 @@
         var grid = document.getElementById('signal-grid');
         var suppressGridClickUntil = 0;
         var dragState = null;
+
+        function thresholdFromData(attributeName, fallback) {
+          if (!grid) return fallback;
+          var raw = grid.dataset[attributeName];
+          var parsed = parseFloat(raw);
+          return Number.isFinite(parsed) ? parsed : fallback;
+        }
+
+        var labelLeftEdgeThreshold = thresholdFromData('labelLeftEdgeThreshold', 20);
+        var labelRightEdgeThreshold = thresholdFromData('labelRightEdgeThreshold', 80);
+        var labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
 
         function matchingClaimTokenForDot(dot, tokens) {
           var id = dot.dataset.dotIdentifier;
@@ -220,11 +239,11 @@
         }
 
         function labelPositionClass(x, y) {
-          var labelY = y > 80 ? 'below' : 'above';
+          var labelY = y > labelTopEdgeThreshold ? 'below' : 'above';
           var labelX = 'center';
-          if (x < 20) {
+          if (x < labelLeftEdgeThreshold) {
             labelX = 'right';
-          } else if (x > 80) {
+          } else if (x > labelRightEdgeThreshold) {
             labelX = 'left';
           }
 
