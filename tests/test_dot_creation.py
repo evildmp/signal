@@ -2,6 +2,7 @@ import re
 
 import pytest
 from django.test import override_settings
+from django.utils.html import escape
 from playwright.sync_api import expect, sync_playwright
 
 from app.models import Dot, Team
@@ -56,6 +57,47 @@ def test_create_dot_endpoint_publishes_to_user_explicit_teams(client, jerry_with
     content = response.content.decode()
     for team_name in explicit_team_names:
         assert team_name in content
+
+
+@pytest.mark.django_db
+def test_create_dot_response_includes_home_dot_attributes(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.post(
+        "/dot/create/",
+        {"x": "42", "y": "73"},
+    )
+
+    assert response.status_code == 200
+    dot = Dot.objects.latest("created_at")
+    content = response.content.decode()
+
+    # Keep inline create-dot output aligned with home-view dot wiring.
+    assert f'data-dot-identifier="{dot.identifier}"' in content
+    assert 'class="signal-dot"' in content
+    assert 'data-owned-by-user="0"' in content
+    assert f'hx-get="/dot/{dot.identifier}/edit/"' in content
+
+
+@pytest.mark.django_db
+def test_create_dot_response_escapes_team_names_in_notification(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+
+    explicit_team = Team.objects.explicit_for_user(jerry_with_explicit_teams).first()
+    explicit_team.name = 'Blue <script>alert("x")</script> & team'
+    explicit_team.save(update_fields=["name"])
+
+    response = client.post(
+        "/dot/create/",
+        {"x": "42", "y": "73"},
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+
+    escaped_name = escape(explicit_team.name)
+    assert escaped_name in content
+    assert explicit_team.name not in content
 
 
 @pytest.mark.django_db

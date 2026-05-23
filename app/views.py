@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -230,24 +231,16 @@ def create_dot(request):
     team_names = [team.name for team in explicit_teams]
     team_list = " and ".join(team_names)
 
-    dot_html = (
-        f'<span class="signal-dot" '
-        f'data-dot-identifier="{dot.identifier}" '
-        f'data-owned-by-user="0" '
-        f'hx-get="/dot/{dot.identifier}/edit/" '
-        f'hx-target="#dot-editor-host" '
-        f'hx-swap="innerHTML" '
-        f'style="left: {dot.x}%; bottom: {dot.y}%;" '
-        f'title="{dot.identifier}"></span>'
+    dot.published_label_class = build_dot_label_position_class(dot)
+    dot_html = render_to_string(
+        "app/_dot.html",
+        {"dot": dot},
+        request=request,
     )
-
-    label_class = f"signal-dot-label {build_dot_label_position_class(dot)}"
-
-    notification_html = (
-        f'<span class="{label_class}"'
-        f' style="left: {dot.x}%; bottom: {dot.y}%;">'
-        f'Published to <span class="team-names">{team_list}</span>.'
-        '</span>'
+    notification_html = render_to_string(
+        "app/_dot_notification.html",
+        {"dot": dot, "team_list": team_list},
+        request=request,
     )
 
     response = HttpResponse(dot_html + notification_html)

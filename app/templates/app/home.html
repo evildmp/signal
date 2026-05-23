@@ -90,16 +90,7 @@
               <span class="signal-axis signal-axis--y-top p-text--small">Aroused</span>
               <span class="signal-axis signal-axis--y-bottom p-text--small">Settled</span>
               {% for dot in dots %}
-                <span
-                  class="signal-dot{% if dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
-                  data-dot-identifier="{{ dot.identifier }}"
-                  data-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
-                  hx-get="{% url 'dot_edit' dot.identifier %}"
-                  hx-target="#dot-editor-host"
-                  hx-swap="innerHTML"
-                  style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
-                  title="{{ dot.identifier }}"
-                ></span>
+                {% include "app/_dot.html" with dot=dot only %}
                 {% if dot.published_label_parts %}
                   <span
                     class="signal-dot-published-label {{ dot.published_label_class }}"
