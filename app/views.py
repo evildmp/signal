@@ -22,6 +22,12 @@ def user_can_manage_dot(request, dot, claim_token=None):
     return dot.owner_user_id == request.user.id or str(dot.claim_token) == token
 
 
+def request_claim_token(request):
+    if request.method == "POST":
+        return request.POST.get("claim_token", "")
+    return request.GET.get("claim_token", "")
+
+
 def build_dot_label_position_class_from_coordinates(x, y):
     label_y = "below" if y > LABEL_TOP_EDGE_THRESHOLD else "above"
     if x < LABEL_LEFT_EDGE_THRESHOLD:
@@ -248,7 +254,7 @@ def create_dot(request):
 def move_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
-    claim_token = request.POST.get("claim_token", "")
+    claim_token = request_claim_token(request)
     if not user_can_manage_dot(request, dot, claim_token):
         return HttpResponse(status=403)
 
@@ -273,7 +279,7 @@ def move_dot(request, identifier):
 def delete_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
-    claim_token = request.POST.get("claim_token", "")
+    claim_token = request_claim_token(request)
     if not user_can_manage_dot(request, dot, claim_token):
         return HttpResponse(status=403)
 
@@ -287,7 +293,7 @@ def delete_dot(request, identifier):
 @login_required
 def dot_edit(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
-    claim_token = request.POST.get("claim_token", "") if request.method == "POST" else request.GET.get("claim_token", "")
+    claim_token = request_claim_token(request)
     if not user_can_manage_dot(request, dot, claim_token):
         return HttpResponse(status=403)
 
