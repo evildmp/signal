@@ -150,18 +150,25 @@ def home(request):
     )
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
-    if selected_team_ids:
+    if my_dots_only:
+        dots = list(
+            Dot.objects.filter(owner_user=request.user, created_at__gte=visibility_cutoff)
+            .distinct()
+            .order_by("identifier")
+        )
+    elif selected_team_ids:
         dots = list(
             Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
             .distinct()
             .order_by("identifier")
         )
-        for dot in dots:
-            dot.published_label_groups = build_published_label_groups(dot)
-            dot.published_label_parts = build_published_label_parts(dot)
-            dot.published_label_class = build_dot_label_position_class(dot)
     else:
         dots = []
+
+    for dot in dots:
+        dot.published_label_groups = build_published_label_groups(dot)
+        dot.published_label_parts = build_published_label_parts(dot)
+        dot.published_label_class = build_dot_label_position_class(dot)
 
     return render(
         request,
@@ -201,6 +208,7 @@ def create_dot(request):
     dot_html = (
         f'<span class="signal-dot" '
         f'data-dot-identifier="{dot.identifier}" '
+        f'data-claim-token="{dot.claim_token}" '
         f'hx-get="/dot/{dot.identifier}/edit/" '
         f'hx-target="#dot-editor-host" '
         f'hx-swap="innerHTML" '

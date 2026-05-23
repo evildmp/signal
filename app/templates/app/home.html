@@ -85,6 +85,7 @@
                 <span
                   class="signal-dot{% if dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
                   data-dot-identifier="{{ dot.identifier }}"
+                  data-claim-token="{{ dot.claim_token }}"
                   data-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
                   hx-get="{% url 'dot_edit' dot.identifier %}"
                   hx-target="#dot-editor-host"
@@ -146,18 +147,21 @@
         var suppressGridClickUntil = 0;
         var dragState = null;
 
-        var sessionTokens = JSON.parse(sessionStorage.getItem('dotTokens') || '{}');
-        var localTokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-        if (Object.keys(localTokens).length === 0 && Object.keys(sessionTokens).length > 0) {
-          localStorage.setItem('dotTokens', JSON.stringify(sessionTokens));
+        function matchingClaimTokenForDot(dot, tokens) {
+          var id = dot.dataset.dotIdentifier;
+          var expectedClaimToken = dot.dataset.claimToken || '';
+          var storedClaimToken = tokens[id] || '';
+
+          if (!storedClaimToken || !expectedClaimToken) return '';
+          return storedClaimToken === expectedClaimToken ? storedClaimToken : '';
         }
 
         function updateClaimedDotClasses() {
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
           document.querySelectorAll('.signal-dot').forEach(function(dot) {
-            var id = dot.dataset.dotIdentifier;
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
-            if (isOwnedByUser || tokens[id]) {
+            var hasMatchingClaimToken = !!matchingClaimTokenForDot(dot, tokens);
+            if (isOwnedByUser || hasMatchingClaimToken) {
               dot.classList.add('signal-dot--claimed');
             } else {
               dot.classList.remove('signal-dot--claimed');
@@ -166,8 +170,10 @@
         }
 
         function claimTokenForIdentifier(identifier) {
+          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+          if (!dot) return '';
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-          return tokens[identifier] || '';
+          return matchingClaimTokenForDot(dot, tokens);
         }
 
         // Initial mark

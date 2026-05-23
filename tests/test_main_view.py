@@ -90,6 +90,31 @@ def test_selecting_a_team_clears_my_dots_only(client, jerry_with_explicit_teams,
 
 
 @pytest.mark.django_db
+def test_my_dots_only_shows_owned_dots_even_without_selected_teams(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    owned_blue = Dot.objects.create(x=15, y=25, owner_user=jerry_with_explicit_teams)
+    owned_blue.teams.add(minimum_team_hierarchy["blue"])
+
+    owned_org = Dot.objects.create(x=35, y=45, owner_user=jerry_with_explicit_teams)
+    owned_org.teams.add(minimum_team_hierarchy["organisation"])
+
+    other_users_dot = Dot.objects.create(x=55, y=65)
+    other_users_dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = post_my_dots_only(client)
+
+    assert response.status_code == 200
+    assert response.context["my_dots_only"] is True
+    returned_identifiers = {dot.identifier for dot in response.context["dots"]}
+    assert owned_blue.identifier in returned_identifiers
+    assert owned_org.identifier in returned_identifiers
+    assert other_users_dot.identifier not in returned_identifiers
+
+
+@pytest.mark.django_db
 def test_main_view_shows_only_recent_dots_for_selected_teams(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 

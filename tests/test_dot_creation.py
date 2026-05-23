@@ -1,5 +1,4 @@
 import re
-import uuid
 
 import pytest
 from django.test import override_settings
@@ -13,7 +12,8 @@ def test_dot_claim_token_is_generated_on_creation():
     dot = Dot.objects.create(x=10, y=20)
 
     assert dot.claim_token is not None
-    assert isinstance(dot.claim_token, uuid.UUID)
+    assert isinstance(dot.claim_token, str)
+    assert len(dot.claim_token) > 0
 
 
 @pytest.mark.django_db

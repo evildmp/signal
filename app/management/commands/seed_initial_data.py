@@ -6,10 +6,12 @@ from datetime import timedelta
 import random
 
 from app.models import (
+    ACTION_SENTIMENTS,
     DOT_IDENTIFIER_ADJECTIVES,
     DOT_IDENTIFIER_COLOURS,
     DOT_IDENTIFIER_NOUNS,
     Dot,
+    FEELINGS,
     Team,
     TeamMembership,
 )
@@ -81,12 +83,39 @@ def _identifier_for_index(index):
     return f"{adjective}-{colour}-{noun}"
 
 
+def _pick_ratio_indices(rng, total_count, ratio):
+    target_count = int(round(total_count * ratio))
+    target_count = max(0, min(total_count, target_count))
+    indices = list(range(total_count))
+    rng.shuffle(indices)
+    return set(indices[:target_count])
+
+
+def _pick_alternative_teams(rng, explicit_teams, implicit_only_teams):
+    if implicit_only_teams and rng.random() < 0.5:
+        chosen_implicit = [team for team in implicit_only_teams if rng.random() < 0.5]
+        if not chosen_implicit:
+            chosen_implicit = [rng.choice(implicit_only_teams)]
+
+        chosen_explicit = [team for team in explicit_teams if rng.random() < 0.35]
+        combined = {team.id: team for team in (chosen_implicit + chosen_explicit)}
+        return [combined[team_id] for team_id in sorted(combined.keys())]
+
+    if len(explicit_teams) > 1:
+        subset = [team for team in explicit_teams if rng.random() < 0.6]
+        if not subset:
+            subset = [rng.choice(explicit_teams)]
+        if len(subset) == len(explicit_teams):
+            subset = subset[:-1]
+        return sorted(subset, key=lambda team: team.id)
+
+    return explicit_teams
+
+
 class Command(BaseCommand):
     help = "Seeds initial development teams, users, memberships, and dots."
 
     def handle(self, *args, **options):
-        user_model = get_user_model()
-
         ensure_team_tree(TEAM_TREE)
 
         created_users = 0
@@ -121,9 +150,15 @@ class Command(BaseCommand):
                 team for team in visible_teams if team.id not in {t.id for t in explicit_teams}
             ]
 
-            # Seed a small but useful deterministic set for each user.
-            for dot_number in range(4):
+            dot_count = rng.randint(4, 12)
+            explicit_publication_indices = _pick_ratio_indices(rng, dot_count, 0.66)
+            anonymous_indices = _pick_ratio_indices(rng, dot_count, 0.70)
+            feeling_indices = _pick_ratio_indices(rng, dot_count, 0.40)
+            action_indices = _pick_ratio_indices(rng, dot_count, 0.20)
+
+            for dot_number in range(dot_count):
                 identifier = _identifier_for_index(dot_index)
+                claim_token = _identifier_for_index(dot_index + 10000)
                 dot_index += 1
 
                 dot, dot_created = Dot.objects.get_or_create(
@@ -131,17 +166,74 @@ class Command(BaseCommand):
                     defaults={
                         "x": rng.randint(0, 100),
                         "y": rng.randint(0, 100),
+                        "claim_token": claim_token,
                     },
                 )
                 if dot_created:
                     created_dots += 1
 
-                if dot_number < 3:
+                if dot_number in explicit_publication_indices:
                     target_teams = explicit_teams
                 else:
-                    target_teams = implicit_only_teams or explicit_teams
+                    target_teams = _pick_alternative_teams(
+                        rng,
+                        explicit_teams,
+                        implicit_only_teams,
+                    )
 
                 dot.teams.set(target_teams)
+
+                if dot_number in anonymous_indices:
+                    dot.owner_user = None
+                else:
+                    dot.owner_user = user
+
+                if dot_number in feeling_indices:
+                    if rng.random() < 0.3:
+                        dot.feeling = []
+                        dot.feeling_free_text = rng.choice(
+                            [
+                                "hard to name",
+                                "mixed feelings",
+                                "in between",
+                                "processing",
+                                "uncertain",
+                            ]
+                        )
+                    else:
+                        dot.feeling = [rng.choice(FEELINGS)]
+                        dot.feeling_free_text = ""
+                else:
+                    dot.feeling = []
+                    dot.feeling_free_text = ""
+
+                if dot_number in action_indices:
+                    if rng.random() < 0.3:
+                        dot.action_sentiment = []
+                        dot.action_sentiment_free_text = rng.choice(
+                            [
+                                "Could use a quick chat",
+                                "Need a sounding board",
+                                "Would value support",
+                                "Want to share this",
+                            ]
+                        )
+                    else:
+                        dot.action_sentiment = [rng.choice(ACTION_SENTIMENTS)]
+                        dot.action_sentiment_free_text = ""
+                else:
+                    dot.action_sentiment = []
+                    dot.action_sentiment_free_text = ""
+
+                dot.save(
+                    update_fields=[
+                        "owner_user",
+                        "feeling",
+                        "feeling_free_text",
+                        "action_sentiment",
+                        "action_sentiment_free_text",
+                    ]
+                )
 
                 age_in_days = rng.randint(0, 6)
                 created_at = timezone.now() - timedelta(

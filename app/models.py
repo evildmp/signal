@@ -193,7 +193,8 @@ class Dot(models.Model):
 		related_name="owned_dots",
 	)
 	teams = models.ManyToManyField(Team, related_name="dots")
-	claim_token = models.UUIDField(default=uuid.uuid4, editable=False)
+	claim_token = models.CharField(max_length=64, default=generate_dot_identifier, editable=False)
+	ownership_token = models.UUIDField(default=uuid.uuid4, editable=False)
 	feeling = models.JSONField(default=list, blank=True)
 	action_sentiment = models.JSONField(default=list, blank=True)
 	feeling_free_text = models.TextField(blank=True, default="")
