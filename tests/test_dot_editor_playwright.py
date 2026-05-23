@@ -18,14 +18,14 @@ def test_clicking_dot_opens_editor_dialog_over_grid(live_server, jerry_with_expl
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        clicked_dot = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        clicked_dot = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         expect(clicked_dot).to_be_visible()
         clicked_dot.click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
         expect(dialog).to_have_attribute("open", "")
-        expect(dialog).not_to_contain_text(dot.identifier)
+        expect(dialog).not_to_contain_text(dot.claim_token)
 
         browser.close()
 
@@ -44,7 +44,7 @@ def test_dot_editor_dialog_has_cancel_button_and_no_close_button(live_server, je
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]').click()
+        page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
@@ -71,7 +71,7 @@ def test_dot_editor_dialog_does_not_autofocus_private(live_server, jerry_with_ex
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]').click()
+        page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
@@ -95,7 +95,7 @@ def test_dot_editor_dialog_closes_on_escape(live_server, jerry_with_explicit_tea
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]').click()
+        page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
@@ -119,7 +119,7 @@ def test_clicking_dot_opens_dialog_without_creating_new_dot(live_server, jerry_w
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        target_dot = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        target_dot = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         expect(target_dot).to_be_visible()
 
         dots = page.locator(".signal-dot")
@@ -147,7 +147,7 @@ def test_saving_team_selection_in_dialog_updates_dot(live_server, jerry_with_exp
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]').click()
+        page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
@@ -178,7 +178,7 @@ def test_unchecking_all_teams_auto_selects_private(live_server, jerry_with_expli
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]').click()
+        page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
         expect(dialog).to_be_visible()
@@ -216,12 +216,12 @@ def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_exp
         page.get_by_role("button", name="Log in").click()
 
         page.evaluate(
-            "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
-            [dot.identifier, str(dot.ownership_token)],
+            "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
+            [str(dot.id), str(dot.ownership_token)],
         )
         page.reload()
 
-        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         expect(dot_locator).to_be_visible()
         dot_locator.click()
 
@@ -232,11 +232,11 @@ def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_exp
         dialog.get_by_role("button", name="Delete").click()
 
         expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
-        expect(page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')).to_have_count(0)
+        expect(page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')).to_have_count(0)
 
         browser.close()
 
-    assert not Dot.objects.filter(identifier=dot.identifier).exists()
+    assert not Dot.objects.filter(id=dot.id).exists()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -254,12 +254,12 @@ def test_saving_dot_updates_published_label_without_reload(live_server, jerry_wi
         page.get_by_role("button", name="Log in").click()
 
         page.evaluate(
-            "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
-            [dot.identifier, str(dot.ownership_token)],
+            "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
+            [str(dot.id), str(dot.ownership_token)],
         )
         page.reload()
 
-        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         dot_locator.click()
 
         dialog = page.locator("dialog#dot-editor-dialog")
@@ -268,7 +268,7 @@ def test_saving_dot_updates_published_label_without_reload(live_server, jerry_wi
         dialog.get_by_label("Show my name").check()
         dialog.get_by_role("button", name="Save").click()
 
-        label = page.locator(f'.signal-dot-published-label[data-dot-identifier="{dot.identifier}"]')
+        label = page.locator(f'.signal-dot-published-label[data-dot-id="{dot.id}"]')
         expect(label).to_be_visible()
         expect(label).to_contain_text("jerry")
         expect(label).to_contain_text("happy")

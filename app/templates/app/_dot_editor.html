@@ -3,7 +3,7 @@
     id="dot-editor-form"
     method="post"
     class="dot-editor-form"
-    hx-post="{% url 'dot_edit' dot.identifier %}"
+    hx-post="{% url 'dot_edit' dot.id %}"
     hx-target="#dot-editor-host"
     hx-swap="innerHTML"
   >
@@ -76,7 +76,7 @@
         type="button"
         class="p-button--negative dot-editor-actions-delete"
         data-delete-dot
-        hx-post="{% url 'delete_dot' dot.identifier %}"
+        hx-post="{% url 'delete_dot' dot.id %}"
         hx-target="#dot-editor-host"
         hx-swap="innerHTML"
       >Delete</button>
@@ -100,7 +100,7 @@
     function getStoredOwnershipToken() {
       try {
         var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-        var match = form.getAttribute('hx-post').match(/^\/dot\/([^/]+)\/edit\/$/);
+        var match = form.getAttribute('hx-post').match(/^\/dot\/(\d+)\/edit\/$/);
         if (!match) return '';
         return tokens[match[1]] || '';
       } catch (error) {

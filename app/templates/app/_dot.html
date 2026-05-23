@@ -1,10 +1,10 @@
 <span
   class="signal-dot{% if dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
-  data-dot-identifier="{{ dot.identifier }}"
+  data-dot-id="{{ dot.id }}"
   data-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
-  hx-get="{% url 'dot_edit' dot.identifier %}"
+  hx-get="{% url 'dot_edit' dot.id %}"
   hx-target="#dot-editor-host"
   hx-swap="innerHTML"
   style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
-  title="{{ dot.identifier }}"
+  title="dot-{{ dot.id }}"
 ></span>

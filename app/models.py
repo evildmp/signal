@@ -2,8 +2,9 @@ import uuid
 
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldError, ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 
 import random
@@ -130,8 +131,15 @@ def generate_dot_identifier():
 				random.choice(DOT_IDENTIFIER_NOUNS),
 			]
 		)
-		if not Dot.objects.filter(identifier=identifier).exists():
-			return identifier
+		try:
+			if not Dot.objects.filter(claim_token=identifier).exists():
+				return identifier
+		except (FieldError, OperationalError, ProgrammingError):
+			try:
+				if not Dot.objects.filter(identifier=identifier).exists():
+					return identifier
+			except (FieldError, OperationalError, ProgrammingError):
+				return identifier
 
 
 FEELINGS = [
@@ -183,7 +191,6 @@ RELATIONAL_WISHES = ACTION_SENTIMENTS
 class Dot(models.Model):
 	x = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
 	y = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
-	identifier = models.CharField(max_length=64, unique=True, default=generate_dot_identifier)
 	created_at = models.DateTimeField(auto_now_add=True)
 	owner_user = models.ForeignKey(
 		get_user_model(),

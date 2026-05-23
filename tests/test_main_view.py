@@ -117,10 +117,33 @@ def test_my_dots_only_shows_owned_dots_even_without_selected_teams(
 
     assert response.status_code == 200
     assert response.context["my_dots_only"] is True
-    returned_identifiers = {dot.identifier for dot in response.context["dots"]}
-    assert owned_blue.identifier in returned_identifiers
-    assert owned_org.identifier in returned_identifiers
-    assert other_users_dot.identifier not in returned_identifiers
+    returned_dot_ids = {dot.id for dot in response.context["dots"]}
+    assert owned_blue.id in returned_dot_ids
+    assert owned_org.id in returned_dot_ids
+    assert other_users_dot.id not in returned_dot_ids
+
+
+@pytest.mark.django_db
+def test_my_dots_only_includes_dot_with_matching_ownership_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    token_managed_dot = Dot.objects.create(x=45, y=55)
+    token_managed_dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        "/",
+        {
+            "action": "set_my_dots_only",
+            "enabled": "1",
+            "ownership_token": str(token_managed_dot.ownership_token),
+        },
+    )
+
+    assert response.status_code == 200
+    returned_dot_ids = {dot.id for dot in response.context["dots"]}
+    assert token_managed_dot.id in returned_dot_ids
 
 
 @pytest.mark.django_db
@@ -146,8 +169,8 @@ def test_main_view_shows_only_recent_dots_for_selected_teams(client, jerry_with_
     response = client.get("/")
 
     assert response.status_code == 200
-    returned_identifiers = {dot.identifier for dot in response.context["dots"]}
-    assert returned_identifiers == {visible_dot.identifier}
+    returned_dot_ids = {dot.id for dot in response.context["dots"]}
+    assert returned_dot_ids == {visible_dot.id}
 
 
 @pytest.mark.django_db
@@ -164,7 +187,49 @@ def test_main_view_marks_owner_related_dot_as_claimed_without_token(
     assert response.status_code == 200
     content = response.content.decode()
     match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-identifier="{re.escape(dot.identifier)}"',
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"',
+        content,
+    )
+    assert match is not None
+    assert "signal-dot--claimed" in match.group(1)
+
+
+@pytest.mark.django_db
+def test_my_dots_only_renders_owned_dot_with_owned_by_user_flag(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=40, y=60, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = post_my_dots_only(client)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"\s+data-owned-by-user="([^"]*)"',
+        content,
+    )
+    assert match is not None
+    assert match.group(2) == "1"
+
+
+@pytest.mark.django_db
+def test_my_dots_only_renders_owned_dot_as_claimed(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=40, y=60, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = post_my_dots_only(client)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"',
         content,
     )
     assert match is not None
@@ -186,7 +251,7 @@ def test_main_view_renders_published_name_label_when_owner_relation_exists(
     content = response.content.decode()
     assert (
         re.search(
-            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*jerry.*</span>',
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-id="{dot.id}"[^>]*>.*jerry.*</span>',
             content,
             re.IGNORECASE | re.DOTALL,
         )
@@ -209,7 +274,7 @@ def test_main_view_omits_published_name_label_when_owner_relation_is_null(
     content = response.content.decode()
     assert (
         re.search(
-            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*jerry.*</span>',
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-id="{dot.id}"[^>]*>.*jerry.*</span>',
             content,
             re.IGNORECASE | re.DOTALL,
         )
@@ -240,7 +305,7 @@ def test_main_view_renders_sentiment_labels_for_published_dot(
     content = response.content.decode()
     assert (
         re.search(
-            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-identifier="{re.escape(dot.identifier)}"[^>]*>.*happy.*steady.*I need help.*Need a chat.*</span>',
+            rf'<span[^>]*class="[^"]*signal-dot-published-label[^"]*"[^>]*data-dot-id="{dot.id}"[^>]*>.*happy.*steady.*I need help.*Need a chat.*</span>',
             content,
             re.IGNORECASE | re.DOTALL,
         )
@@ -269,7 +334,7 @@ def test_main_view_deduplicates_sentiment_labels_when_free_text_repeats_selected
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert f'data-dot-identifier="{dot.identifier}"' in content
+    assert f'data-dot-id="{dot.id}"' in content
     assert "happy, steady" in content
     assert "I need help, Need a chat" in content
     assert "happy, happy" not in content.lower()

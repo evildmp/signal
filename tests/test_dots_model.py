@@ -23,14 +23,14 @@ def test_dot_coordinates_must_be_within_zero_to_hundred():
 
 
 @pytest.mark.django_db
-def test_dot_identifier_is_unique_and_matches_expected_pattern():
+def test_dot_claim_token_is_unique_and_matches_expected_pattern():
     first = Dot.objects.create(x=10, y=20)
     second = Dot.objects.create(x=30, y=40)
 
     pattern = re.compile(r"^[a-z]+-[a-z]+-[a-z]+$")
-    assert pattern.match(first.identifier)
-    assert pattern.match(second.identifier)
-    assert first.identifier != second.identifier
+    assert pattern.match(first.claim_token)
+    assert pattern.match(second.claim_token)
+    assert first.claim_token != second.claim_token
 
 
 @pytest.mark.django_db

@@ -73,10 +73,10 @@ def test_create_dot_response_includes_home_dot_attributes(client, jerry_with_exp
     content = response.content.decode()
 
     # Keep inline create-dot output aligned with home-view dot wiring.
-    assert f'data-dot-identifier="{dot.identifier}"' in content
+    assert f'data-dot-id="{dot.id}"' in content
     assert 'class="signal-dot"' in content
     assert 'data-owned-by-user="0"' in content
-    assert f'hx-get="/dot/{dot.identifier}/edit/"' in content
+    assert f'hx-get="/dot/{dot.id}/edit/"' in content
 
 
 @pytest.mark.django_db
@@ -132,7 +132,7 @@ def test_move_dot_endpoint_updates_coordinates(client, jerry_with_explicit_teams
     dot = Dot.objects.create(x=10, y=20)
 
     response = client.post(
-        f"/dot/{dot.identifier}/move/",
+        f"/dot/{dot.id}/move/",
         {"x": "72", "y": "64", "ownership_token": str(dot.ownership_token)},
     )
 
@@ -148,7 +148,7 @@ def test_move_dot_endpoint_rejects_invalid_coordinates(client, jerry_with_explic
     dot = Dot.objects.create(x=10, y=20)
 
     response = client.post(
-        f"/dot/{dot.identifier}/move/",
+        f"/dot/{dot.id}/move/",
         {"x": "999", "y": "-2", "ownership_token": str(dot.ownership_token)},
     )
 
@@ -164,7 +164,7 @@ def test_move_dot_endpoint_rejects_wrong_ownership_token(client, jerry_with_expl
     dot = Dot.objects.create(x=10, y=20)
 
     response = client.post(
-        f"/dot/{dot.identifier}/move/",
+        f"/dot/{dot.id}/move/",
         {"x": "50", "y": "50", "ownership_token": "not-the-right-token"},
     )
 
@@ -179,7 +179,7 @@ def test_move_dot_endpoint_allows_user_with_owner_relation_without_ownership_tok
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20, owner_user=jerry_with_explicit_teams)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64"})
+    response = client.post(f"/dot/{dot.id}/move/", {"x": "72", "y": "64"})
 
     assert response.status_code == 200
     dot.refresh_from_db()
@@ -319,11 +319,11 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
         expect(page.locator(".signal-dot")).to_have_count(1)
 
         dot_locator = page.locator(".signal-dot").first
-        identifier = dot_locator.get_attribute("data-dot-identifier")
+        dot_id = dot_locator.get_attribute("data-dot-id")
 
         token_before_refresh = page.evaluate(
             "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
-            identifier,
+            dot_id,
         )
         assert token_before_refresh is not None
 
@@ -342,7 +342,7 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
         browser.close()
 
     from app.models import Dot as DotModel
-    moved_dot = DotModel.objects.get(identifier=identifier)
+    moved_dot = DotModel.objects.get(id=int(dot_id))
     assert moved_dot.x != 25 or moved_dot.y != 75  # position should have changed
 
 
@@ -360,12 +360,12 @@ def test_dragging_not_owned_dot_does_nothing(live_server, jerry_with_explicit_te
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        dot_locator = page.locator(f'.signal-dot[data-dot-identifier="{dot.identifier}"]')
+        dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         expect(dot_locator).to_be_visible()
 
         token = page.evaluate(
             "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
-            dot.identifier,
+            str(dot.id),
         )
         assert token is None
 

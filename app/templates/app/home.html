@@ -41,6 +41,7 @@
               <form id="drawer-filter-form" method="post" hx-post="/" hx-trigger="change" hx-target="body">
                 {% csrf_token %}
                 {{ drawer_filter_form.action }}
+                <div id="drawer-ownership-tokens" hidden></div>
                 {% include "app/_team_tree_with_toggle.html" with toggle_field=drawer_filter_form.enabled toggle_label="My dots only" team_tree=team_tree selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
               </form>
               <script>
@@ -48,9 +49,36 @@
                   var form = document.getElementById('drawer-filter-form');
                   if (!form) return;
                   var toggle = form.querySelector('#id_enabled');
+                  var tokenHost = form.querySelector('#drawer-ownership-tokens');
                   var teamBoxes = function () { return form.querySelectorAll('[name="team_ids"]'); };
+
+                  function syncOwnershipTokens() {
+                    if (!tokenHost) return;
+                    tokenHost.innerHTML = '';
+
+                    var tokens = {};
+                    try {
+                      tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+                    } catch (error) {
+                      tokens = {};
+                    }
+
+                    Object.keys(tokens).forEach(function (dotId) {
+                      var token = tokens[dotId];
+                      if (!token) return;
+                      var input = document.createElement('input');
+                      input.type = 'hidden';
+                      input.name = 'ownership_token';
+                      input.value = token;
+                      tokenHost.appendChild(input);
+                    });
+                  }
+
+                  syncOwnershipTokens();
+
                   // Use capture phase so mutual-exclusion runs before HTMX serialises.
                   form.addEventListener('change', function (e) {
+                    syncOwnershipTokens();
                     if (e.target === toggle && toggle.checked) {
                       teamBoxes().forEach(function (cb) { cb.checked = false; });
                     } else if (e.target.name === 'team_ids' && e.target.checked) {
@@ -90,11 +118,11 @@
               <span class="signal-axis signal-axis--y-top p-text--small">Aroused</span>
               <span class="signal-axis signal-axis--y-bottom p-text--small">Settled</span>
               {% for dot in dots %}
-                {% include "app/_dot.html" with dot=dot only %}
+                {% include "app/_dot.html" with dot=dot %}
                 {% if dot.published_label_parts %}
                   <span
                     class="signal-dot-published-label {{ dot.published_label_class }}"
-                    data-dot-identifier="{{ dot.identifier }}"
+                    data-dot-id="{{ dot.id }}"
                     style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
                   >
                     {% if dot.published_label_groups.username %}
@@ -157,7 +185,7 @@
         var labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
 
         function ownershipTokenForDot(dot, tokens) {
-          var id = dot.dataset.dotIdentifier;
+          var id = dot.dataset.dotId;
           return tokens[id] || '';
         }
 
@@ -166,6 +194,7 @@
           document.querySelectorAll('.signal-dot').forEach(function(dot) {
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
             var hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
+
             if (isOwnedByUser || hasOwnershipToken) {
               dot.classList.add('signal-dot--claimed');
             } else {
@@ -174,8 +203,8 @@
           });
         }
 
-        function ownershipTokenForIdentifier(identifier) {
-          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+        function ownershipTokenForDotId(dotId) {
+          var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
           if (!dot) return '';
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
           return ownershipTokenForDot(dot, tokens);
@@ -199,11 +228,11 @@
         document.body.addEventListener('htmx:configRequest', function (e) {
           if (!e.detail || !e.detail.path || e.detail.verb !== 'get') return;
 
-          var match = e.detail.path.match(/^\/dot\/([^/]+)\/edit\/$/);
+          var match = e.detail.path.match(/^\/dot\/(\d+)\/edit\/$/);
           if (!match) return;
 
-          var identifier = match[1];
-          var token = ownershipTokenForIdentifier(identifier);
+          var dotId = match[1];
+          var token = ownershipTokenForDotId(dotId);
           if (token) {
             e.detail.headers = e.detail.headers || {};
             e.detail.headers['X-Ownership-Token'] = token;
@@ -240,8 +269,8 @@
           return 'signal-dot-label--' + labelY + ' signal-dot-label--x-' + labelX;
         }
 
-        function labelForIdentifier(identifier) {
-          return document.querySelector('.signal-dot-published-label[data-dot-identifier="' + identifier + '"]');
+        function labelForDotId(dotId) {
+          return document.querySelector('.signal-dot-published-label[data-dot-id="' + dotId + '"]');
         }
 
         function applyLabelPosition(label, x, y) {
@@ -278,12 +307,12 @@
 
           finishedDrag.dot.style.left = snappedPosition.x + '%';
           finishedDrag.dot.style.bottom = snappedPosition.y + '%';
-          applyLabelPosition(labelForIdentifier(finishedDrag.dot.dataset.dotIdentifier), snappedPosition.x, snappedPosition.y);
+          applyLabelPosition(labelForDotId(finishedDrag.dot.dataset.dotId), snappedPosition.x, snappedPosition.y);
 
           var ownershipToken = finishedDrag.ownershipToken || '';
 
           suppressGridClickUntil = Date.now() + 300;
-          htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
+          htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotId + '/move/', {
             swap: 'none',
             values: {
               x: snappedPosition.x,
@@ -305,7 +334,7 @@
           dragState.lastPosition = position;
           dragState.dot.style.left = position.x.toFixed(2) + '%';
           dragState.dot.style.bottom = position.y.toFixed(2) + '%';
-          applyLabelPosition(labelForIdentifier(dragState.dot.dataset.dotIdentifier), position.x, position.y);
+          applyLabelPosition(labelForDotId(dragState.dot.dataset.dotId), position.x, position.y);
         }
 
         function onDragEnd() {
@@ -317,7 +346,7 @@
             var dot = e.target.closest('.signal-dot');
             if (!dot) return;
 
-            var ownershipToken = ownershipTokenForIdentifier(dot.dataset.dotIdentifier);
+            var ownershipToken = ownershipTokenForDotId(dot.dataset.dotId);
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
             if (!ownershipToken && !isOwnedByUser) return;
 
@@ -371,43 +400,43 @@
         document.body.addEventListener('dotClaimed', function (e) {
           if (e.detail) {
             var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-            tokens[e.detail.identifier] = e.detail.token;
+            tokens[String(e.detail.dotId)] = e.detail.token;
             localStorage.setItem('dotTokens', JSON.stringify(tokens));
           }
         });
 
         document.body.addEventListener('dotDeleted', function (e) {
-          if (!e.detail || !e.detail.identifier) return;
+          if (!e.detail || !e.detail.dotId) return;
 
-          var identifier = e.detail.identifier;
-          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+          var dotId = String(e.detail.dotId);
+          var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
           if (dot) {
             dot.remove();
           }
 
-          var label = labelForIdentifier(identifier);
+          var label = labelForDotId(dotId);
           if (label) {
             label.remove();
           }
 
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-          if (tokens[identifier]) {
-            delete tokens[identifier];
+          if (tokens[dotId]) {
+            delete tokens[dotId];
             localStorage.setItem('dotTokens', JSON.stringify(tokens));
           }
         });
 
         document.body.addEventListener('dotUpdated', function (e) {
-          if (!e.detail || !e.detail.identifier) return;
+          if (!e.detail || !e.detail.dotId) return;
 
-          var identifier = e.detail.identifier;
-          var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
+          var dotId = String(e.detail.dotId);
+          var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
           if (!dot) return;
 
           dot.dataset.ownedByUser = e.detail.ownedByUser ? '1' : '0';
           updateClaimedDotClasses();
 
-          var label = labelForIdentifier(identifier);
+          var label = labelForDotId(dotId);
           var groups = e.detail.labelGroups || {};
           var hasGroups = !!(groups.username || groups.feelings || groups.actions);
           if (!hasGroups) {
@@ -420,7 +449,7 @@
           if (!label) {
             label = document.createElement('span');
             label.className = 'signal-dot-published-label';
-            label.dataset.dotIdentifier = identifier;
+            label.dataset.dotId = dotId;
             dot.insertAdjacentElement('afterend', label);
           }
 

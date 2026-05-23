@@ -157,16 +157,14 @@ class Command(BaseCommand):
             action_indices = _pick_ratio_indices(rng, dot_count, 0.20)
 
             for dot_number in range(dot_count):
-                identifier = _identifier_for_index(dot_index)
-                claim_token = _identifier_for_index(dot_index + 10000)
+                claim_token = _identifier_for_index(dot_index)
                 dot_index += 1
 
                 dot, dot_created = Dot.objects.get_or_create(
-                    identifier=identifier,
+                    claim_token=claim_token,
                     defaults={
                         "x": rng.randint(0, 100),
                         "y": rng.randint(0, 100),
-                        "claim_token": claim_token,
                     },
                 )
                 if dot_created:

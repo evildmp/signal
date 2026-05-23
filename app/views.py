@@ -5,9 +5,11 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db.models import Q
 
 import json
 from datetime import timedelta
+from uuid import UUID
 
 from app.forms import DotEditorForm, DrawerFilterForm
 from app.models import Dot, Team
@@ -172,18 +174,30 @@ def home(request):
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     if my_dots_only:
+        raw_tokens = request.POST.getlist("ownership_token") if request.method == "POST" else []
+        ownership_tokens = []
+        for raw_token in raw_tokens:
+            try:
+                ownership_tokens.append(UUID(str(raw_token)))
+            except (TypeError, ValueError):
+                continue
+
+        management_filter = Q(owner_user=request.user)
+        if ownership_tokens:
+            management_filter |= Q(ownership_token__in=ownership_tokens)
+
         dots = list(
-            Dot.objects.filter(owner_user=request.user, created_at__gte=visibility_cutoff)
+            Dot.objects.filter(management_filter, created_at__gte=visibility_cutoff)
             .select_related("owner_user")
             .distinct()
-            .order_by("identifier")
+            .order_by("id")
         )
     elif selected_team_ids:
         dots = list(
             Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
             .select_related("owner_user")
             .distinct()
-            .order_by("identifier")
+            .order_by("id")
         )
     else:
         dots = []
@@ -245,7 +259,7 @@ def create_dot(request):
 
     response = HttpResponse(dot_html + notification_html)
     response["HX-Trigger-After-Swap"] = json.dumps(
-        {"dotClaimed": {"identifier": dot.identifier, "token": str(dot.ownership_token)}}
+        {"dotClaimed": {"dotId": dot.id, "token": str(dot.ownership_token)}}
     )
 
     return response
@@ -253,8 +267,8 @@ def create_dot(request):
 
 @login_required
 @require_POST
-def move_dot(request, identifier):
-    dot = get_object_or_404(Dot, identifier=identifier)
+def move_dot(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
 
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
@@ -278,8 +292,8 @@ def move_dot(request, identifier):
 
 @login_required
 @require_POST
-def delete_dot(request, identifier):
-    dot = get_object_or_404(Dot, identifier=identifier)
+def delete_dot(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
 
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
@@ -288,13 +302,13 @@ def delete_dot(request, identifier):
     dot.delete()
 
     response = HttpResponse("")
-    response["HX-Trigger"] = json.dumps({"dotDeleted": {"identifier": identifier}})
+    response["HX-Trigger"] = json.dumps({"dotDeleted": {"dotId": dot_id}})
     return response
 
 
 @login_required
-def dot_edit(request, identifier):
-    dot = get_object_or_404(Dot, identifier=identifier)
+def dot_edit(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
@@ -323,7 +337,7 @@ def dot_edit(request, identifier):
             )
 
             payload = {
-                "identifier": dot.identifier,
+                "dotId": dot.id,
                 "ownedByUser": dot.owner_user_id == request.user.id,
                 "labelParts": build_published_label_parts(dot),
                 "labelGroups": build_published_label_groups(dot),
