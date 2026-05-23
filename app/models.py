@@ -202,6 +202,12 @@ class Dot(models.Model):
 
 	def clean(self):
 		super().clean()
+		if len(self.feeling) > 1:
+			raise ValidationError({"feeling": "Only one feeling value is allowed."})
+
+		if len(self.action_sentiment) > 1:
+			raise ValidationError({"action_sentiment": "Only one action sentiment value is allowed."})
+
 		invalid_feelings = [value for value in self.feeling if value not in FEELINGS]
 		if invalid_feelings:
 			raise ValidationError({"feeling": "Contains invalid feeling values."})

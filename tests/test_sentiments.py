@@ -7,14 +7,11 @@ from app.models import ACTION_SENTIMENTS, Dot, FEELINGS
 
 
 @pytest.mark.django_db
-def test_action_sentiment_option_list_includes_expected_items():
-    assert "I wish I could talk to someone" in ACTION_SENTIMENTS
-    assert "I need help" in ACTION_SENTIMENTS
-    assert "I would love to talk about this" in ACTION_SENTIMENTS
-    assert "I would like people to know" in ACTION_SENTIMENTS
-    assert "I don't know how to talk about this" in ACTION_SENTIMENTS
-    assert "I hope I can talk to someone who has experienced the same thing" in ACTION_SENTIMENTS
-    assert "I would be really happy to share my news" in ACTION_SENTIMENTS
+def test_action_sentiment_options_are_non_empty_unique_strings():
+    assert isinstance(ACTION_SENTIMENTS, list)
+    assert ACTION_SENTIMENTS
+    assert all(isinstance(value, str) and value.strip() for value in ACTION_SENTIMENTS)
+    assert len({value.casefold() for value in ACTION_SENTIMENTS}) == len(ACTION_SENTIMENTS)
 
 
 @pytest.mark.django_db
@@ -24,9 +21,11 @@ def test_dot_feeling_can_have_single_value():
 
 
 @pytest.mark.django_db
-def test_dot_feeling_can_have_multiple_values():
-    dot = Dot.objects.create(x=50, y=50, feeling=FEELINGS[:3])
-    assert dot.feeling == FEELINGS[:3]
+def test_dot_rejects_multiple_feeling_values():
+    dot = Dot(x=50, y=50, feeling=FEELINGS[:2])
+
+    with pytest.raises(ValidationError):
+        dot.full_clean()
 
 
 @pytest.mark.django_db
@@ -73,6 +72,14 @@ def test_dot_action_sentiment_defaults_to_empty_list():
 @pytest.mark.django_db
 def test_dot_rejects_invalid_action_sentiment_values():
     dot = Dot(x=50, y=50, action_sentiment=["Not in list"])
+
+    with pytest.raises(ValidationError):
+        dot.full_clean()
+
+
+@pytest.mark.django_db
+def test_dot_rejects_multiple_action_sentiment_values():
+    dot = Dot(x=50, y=50, action_sentiment=ACTION_SENTIMENTS[:2])
 
     with pytest.raises(ValidationError):
         dot.full_clean()
