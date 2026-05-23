@@ -53,6 +53,20 @@ def test_dot_editor_endpoint_returns_404_for_unknown_dot_id(
 
 
 @pytest.mark.django_db
+def test_dot_editor_endpoint_rejects_put_method(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=33, y=44, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.put(f"/dot/{dot.id}/edit/")
+
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
 def test_dot_editor_post_updates_selected_teams(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):

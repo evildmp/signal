@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 from django.db.models import Q
 
 import json
@@ -127,6 +127,7 @@ def build_team_tree(teams):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def home(request):
     visible_teams = list(
         Team.objects.visible_for_user(request.user, include_implicit=True)
@@ -317,6 +318,7 @@ def delete_dot(request, dot_id):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def dot_edit(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
     ownership_token = request_ownership_token(request)

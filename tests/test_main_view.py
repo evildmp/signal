@@ -59,6 +59,15 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(
 
 
 @pytest.mark.django_db
+def test_home_rejects_put_method(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.put("/")
+
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
 def test_main_view_drawer_exposes_hierarchy_for_jerry(
     client, jerry_with_explicit_teams
 ):
