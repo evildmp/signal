@@ -9,8 +9,40 @@
   >
     {% csrf_token %}
     <h2 class="p-heading--5">Edit dot</h2>
-    <p class="p-text--small">{{ dot.identifier }}</p>
-    {{ form.identifier }}
+
+    <div class="dot-editor-i-feel">
+      <label>I feel</label>
+      <div class="dot-editor-chip-field" data-chip-field="feeling_free_text">
+        <div class="dot-editor-chip-list" data-chip-list-for="feeling_free_text"></div>
+        <input type="text" class="dot-editor-chip-input" data-chip-input-for="feeling_free_text" aria-label="Feeling free text" placeholder="select from the list below or add free text" />
+      </div>
+      {{ form.feeling_free_text.as_hidden }}
+    </div>
+    <div class="dot-editor-sentiment-picker" data-free-text-for="feeling_free_text">
+      {% for checkbox in form.feeling %}
+        <label class="dot-editor-sentiment-option">
+          {{ checkbox.tag }}
+          <span>{{ checkbox.choice_label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+
+    <div class="dot-editor-i-feel">
+      <div class="dot-editor-chip-field" data-chip-field="action_sentiment_free_text">
+        <div class="dot-editor-chip-list" data-chip-list-for="action_sentiment_free_text"></div>
+        <input type="text" class="dot-editor-chip-input" data-chip-input-for="action_sentiment_free_text" aria-label="Action sentiment free text" placeholder="What would you like? Select from the list below or add free text" />
+      </div>
+      {{ form.action_sentiment_free_text.as_hidden }}
+    </div>
+    <div class="dot-editor-sentiment-picker dot-editor-sentiment-picker--stacked" data-free-text-for="action_sentiment_free_text">
+      {% for checkbox in form.action_sentiment %}
+        <label class="dot-editor-sentiment-option">
+          {{ checkbox.tag }}
+          <span>{{ checkbox.choice_label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+
     <p class="p-text--small">Publish to:</p>
     <div class="dot-editor-team-tree">
       <ul>
@@ -29,6 +61,10 @@
     {% if form.errors %}
       <p class="p-notification--negative">{{ form.errors }}</p>
     {% endif %}
+    <label for="{{ form.include_name.id_for_label }}" class="p-text--small">
+      {{ form.include_name }}
+      Include my name
+    </label>
     <div class="dot-editor-actions">
       <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
       <button type="submit" class="p-button--positive">Save</button>
@@ -64,6 +100,127 @@
     });
 
     privateCheckbox.addEventListener('change', clearTeamsWhenPrivateChecked);
+
+    function wireSentimentPicker(picker) {
+      var freeTextName = picker.dataset.freeTextFor;
+      var freeTextInput = form.querySelector('input[type="hidden"][name="' + freeTextName + '"]');
+      var chipList = form.querySelector('[data-chip-list-for="' + freeTextName + '"]');
+      var chipInput = form.querySelector('[data-chip-input-for="' + freeTextName + '"]');
+      var defaultPlaceholder = chipInput ? (chipInput.getAttribute('placeholder') || '') : '';
+      var checkboxes = picker.querySelectorAll('input[type="checkbox"]');
+      if (!freeTextInput || !chipList || !chipInput || !checkboxes.length) return;
+
+      function getValues() {
+        return freeTextInput.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+
+      function setValues(values) {
+        freeTextInput.value = values.join(', ');
+      }
+
+      function hasValue(values, value) {
+        return values.indexOf(value) >= 0;
+      }
+
+      function createChip(value, isPreset) {
+        var chip = document.createElement('span');
+        chip.className = 'p-chip is-inline is-dense dot-editor-chip';
+        chip.dataset.value = value;
+        chip.dataset.preset = isPreset ? '1' : '0';
+
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'p-chip__dismiss dot-editor-chip-remove';
+        remove.setAttribute('aria-label', 'Remove ' + value);
+        remove.textContent = 'x';
+
+        var text = document.createElement('span');
+        text.className = 'p-chip__value dot-editor-chip-text';
+        text.textContent = value;
+
+        remove.addEventListener('click', function () {
+          removeValue(value);
+        });
+
+        chip.appendChild(remove);
+        chip.appendChild(text);
+        chipList.appendChild(chip);
+      }
+
+      function render() {
+        var values = getValues();
+        chipList.innerHTML = '';
+        values.forEach(function (value) {
+          var hasMatchingCheckbox = Array.from(checkboxes).some(function (checkbox) {
+            return checkbox.value === value;
+          });
+          createChip(value, hasMatchingCheckbox);
+        });
+
+        checkboxes.forEach(function (checkbox) {
+          var option = checkbox.closest('.dot-editor-sentiment-option');
+          var selected = hasValue(values, checkbox.value);
+          checkbox.checked = selected;
+          if (option) {
+            option.classList.toggle('is-selected', selected);
+          }
+        });
+
+        chipInput.setAttribute('placeholder', values.length ? '' : defaultPlaceholder);
+      }
+
+      function addValue(value) {
+        var trimmed = value.trim();
+        if (!trimmed) return;
+        var values = getValues();
+        if (hasValue(values, trimmed)) return;
+        values.push(trimmed);
+        setValues(values);
+        render();
+      }
+
+      function removeValue(value) {
+        var values = getValues().filter(function (item) {
+          return item !== value;
+        });
+        setValues(values);
+        render();
+      }
+
+      checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+          if (checkbox.checked) {
+            addValue(checkbox.value);
+          } else {
+            removeValue(checkbox.value);
+          }
+        });
+      });
+
+      chipInput.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ',') return;
+        event.preventDefault();
+        addValue(chipInput.value);
+        chipInput.value = '';
+      });
+
+      chipInput.addEventListener('blur', function () {
+        if (!chipInput.value.trim()) return;
+        addValue(chipInput.value);
+        chipInput.value = '';
+      });
+
+      // Include any initially selected checkboxes in the hidden free text value.
+      checkboxes.forEach(function (checkbox) {
+        if (checkbox.checked) {
+          addValue(checkbox.value);
+        }
+      });
+
+      render();
+    }
+
+    form.querySelectorAll('.dot-editor-sentiment-picker[data-free-text-for]').forEach(wireSentimentPicker);
 
     form.addEventListener('submit', function () {
       syncPrivateFromTeams();

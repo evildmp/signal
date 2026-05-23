@@ -88,3 +88,52 @@ def test_dot_editor_post_with_no_team_selection_saves_as_private(client, jerry_w
 
     dot.refresh_from_db()
     assert set(dot.teams.values_list("id", flat=True)) == set()
+
+
+@pytest.mark.django_db
+def test_dot_editor_endpoint_renders_sentiment_inputs(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get(f"/dot/{dot.identifier}/edit/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'name="feeling"' in content
+    assert 'name="action_sentiment"' in content
+    assert 'name="feeling_free_text"' in content
+    assert 'name="action_sentiment_free_text"' in content
+    assert 'name="include_name"' in content
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_updates_sentiment_fields(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.identifier}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+            "feeling": ["happy", "calm"],
+            "feeling_free_text": "a little uncertain",
+            "action_sentiment": ["I need help"],
+            "action_sentiment_free_text": "Could use a quick chat",
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+    dot.refresh_from_db()
+    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["deep_red"].id}
+    assert dot.feeling == ["happy", "calm"]
+    assert dot.feeling_free_text == "a little uncertain"
+    assert dot.action_sentiment == ["I need help"]
+    assert dot.action_sentiment_free_text == "Could use a quick chat"
+    assert dot.include_name is True

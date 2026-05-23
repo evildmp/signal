@@ -195,6 +195,20 @@ def dot_edit(request, identifier):
         if form.is_valid():
             selected_team_ids = form.cleaned_team_ids()
             dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
+            dot.include_name = form.cleaned_data.get("include_name", False)
+            dot.feeling = form.cleaned_data.get("feeling", [])
+            dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
+            dot.action_sentiment = form.cleaned_data.get("action_sentiment", [])
+            dot.action_sentiment_free_text = form.cleaned_data.get("action_sentiment_free_text", "")
+            dot.save(
+                update_fields=[
+                    "include_name",
+                    "feeling",
+                    "feeling_free_text",
+                    "action_sentiment",
+                    "action_sentiment_free_text",
+                ]
+            )
             return HttpResponse("")
         else:
             selected_team_ids = {

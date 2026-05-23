@@ -2,6 +2,7 @@ import uuid
 
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 
@@ -133,6 +134,52 @@ def generate_dot_identifier():
 			return identifier
 
 
+FEELINGS = [
+	"sad",
+	"happy",
+	"lonely",
+	"tired",
+	"worried",
+	"relaxed",
+	"optimistic",
+	"anxious",
+	"calm",
+	"frustrated",
+	"grateful",
+	"excited",
+	"overwhelmed",
+	"hopeful",
+	"disconnected",
+	"energised",
+	"drained",
+	"curious",
+	"bored",
+	"proud",
+	"embarrassed",
+	"confused",
+	"inspired",
+	"melancholy",
+	"content",
+	"irritated",
+	"peaceful",
+	"restless",
+	"vulnerable",
+]
+
+ACTION_SENTIMENTS = [
+	"I need help",
+	"I wish I could talk to someone",
+	"I don't know how to talk about this",
+	"I hope I can talk to someone who has experienced the same thing",
+	"I would love to talk about this",
+	"I would like people to know",
+	"I would be really happy to share my news",
+]
+
+# Compatibility alias used by historical migration 0006.
+RELATIONAL_WISHES = ACTION_SENTIMENTS
+
+
 class Dot(models.Model):
 	x = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
 	y = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
@@ -140,6 +187,23 @@ class Dot(models.Model):
 	created_at = models.DateTimeField(auto_now_add=True)
 	teams = models.ManyToManyField(Team, related_name="dots")
 	claim_token = models.UUIDField(default=uuid.uuid4, editable=False)
+	feeling = models.JSONField(default=list, blank=True)
+	action_sentiment = models.JSONField(default=list, blank=True)
+	feeling_free_text = models.TextField(blank=True, default="")
+	action_sentiment_free_text = models.TextField(blank=True, default="")
+	include_name = models.BooleanField(default=False)
+
+	def clean(self):
+		super().clean()
+		invalid_feelings = [value for value in self.feeling if value not in FEELINGS]
+		if invalid_feelings:
+			raise ValidationError({"feeling": "Contains invalid feeling values."})
+
+		invalid_action_sentiments = [
+			value for value in self.action_sentiment if value not in ACTION_SENTIMENTS
+		]
+		if invalid_action_sentiments:
+			raise ValidationError({"action_sentiment": "Contains invalid action sentiment values."})
 
 	def is_visible(self, reference_time=None):
 		now = reference_time or timezone.now()

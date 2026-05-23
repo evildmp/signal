@@ -257,7 +257,7 @@
 .dot-editor-team-tree ul {
   margin: 0;
   list-style: none;
-  padding-left: 1rem;
+  padding-left: 0;
 }
 
 .dot-editor-team-tree ul ul {
@@ -267,7 +267,172 @@
 .dot-editor-team-tree li,
 .dot-editor-team-tree label {
   margin: 0;
-  line-height: 1.08;
+  line-height: 1.2;
+  font-size: 0.85rem;
+}
+
+.dot-editor-i-feel {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.dot-editor-i-feel label {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: #444;
+  line-height: 1.2;
+}
+
+.dot-editor-chip-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+  padding: 0.08rem 0;
+  background: transparent !important;
+  border: 0;
+  border-bottom: 1px solid #cdcdcd;
+}
+
+.dot-editor-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.25rem;
+}
+
+.dot-editor-chip {
+  margin: 0;
+  border-radius: 0.45rem;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  vertical-align: baseline;
+  align-self: baseline;
+  padding-left: 0.02rem;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.dot-editor-chip .p-chip__value,
+.dot-editor-chip-text {
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.06rem;
+}
+
+.dot-editor-chip .dot-editor-chip-remove,
+.dot-editor-chip-remove {
+  order: -1;
+  width: 0.74rem;
+  height: 0.74rem;
+  min-width: 0.74rem;
+  border-radius: 999px;
+  border: 0;
+  background: #e3e3e3;
+  color: #111;
+  font-size: 0.6rem !important;
+  font-weight: 700;
+  line-height: 1 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.2rem;
+  margin-left: -0.03rem;
+  opacity: 1;
+  visibility: visible;
+  padding: 0;
+  text-indent: 0 !important;
+  white-space: normal !important;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.dot-editor-chip .dot-editor-chip-remove::before,
+.dot-editor-chip-remove::before {
+  display: none;
+}
+
+.dot-editor-chip .dot-editor-chip-remove:hover,
+.dot-editor-chip .dot-editor-chip-remove:focus,
+.dot-editor-chip-remove:hover,
+.dot-editor-chip-remove:focus {
+  background: #d8d8d8;
+  color: #000;
+}
+
+.dot-editor-chip-input {
+  border: 0;
+  outline: 0;
+  background: transparent !important;
+  min-width: 5rem;
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0;
+  margin: 0;
+}
+
+.dot-editor-chip-input::placeholder {
+  color: #9a9a9a;
+  opacity: 1;
+}
+
+.dot-editor-chip-input::-webkit-input-placeholder {
+  color: #9a9a9a;
+}
+
+.dot-editor-chip-input::-moz-placeholder {
+  color: #9a9a9a;
+  opacity: 1;
+}
+
+.dot-editor-sentiment-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.08rem 0.35rem;
+  margin-top: 0.05rem;
+  align-items: flex-start;
+}
+
+.dot-editor-sentiment-picker--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.04rem;
+}
+
+.dot-editor-sentiment-option {
+  position: relative;
+  display: inline;
+  cursor: default;
+  font-size: 0.85rem;
+  line-height: 1.14;
+  color: #666;
+  margin: 0;
+  padding: 0;
+}
+
+.dot-editor-sentiment-option span {
+  line-height: 1.14;
+  margin: 0;
+  padding: 0;
+}
+
+.dot-editor-sentiment-option input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dot-editor-sentiment-option.is-selected {
+  color: #666;
+  font-weight: 400;
 }
 
 .dot-editor-actions {
