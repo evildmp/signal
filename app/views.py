@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 import json
 from datetime import timedelta
 
-from app.forms import DotEditorForm, DrawerFilterForm, MyDotsOnlyForm, TeamFilterForm
+from app.forms import DotEditorForm, DrawerFilterForm
 from app.models import Dot, Team
 
 
