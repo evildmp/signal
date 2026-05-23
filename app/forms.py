@@ -51,7 +51,9 @@ class DotEditorForm(forms.Form):
             self.initial["feeling_free_text"] = dot.feeling_free_text
             self.initial["action_sentiment"] = dot.action_sentiment
             self.initial["action_sentiment_free_text"] = dot.action_sentiment_free_text
-            self.initial["team_ids"] = [str(team_id) for team_id in dot.teams.values_list("id", flat=True)]
+            self.initial["team_ids"] = [
+                str(team_id) for team_id in dot.teams.values_list("id", flat=True)
+            ]
             self.initial["private"] = not dot.teams.exists()
 
         if user is not None:
@@ -99,18 +101,26 @@ class DotEditorForm(forms.Form):
             cleaned_data.get("action_sentiment", []),
         )
 
-        if self._combined_sentiment_count(
-            cleaned_data.get("feeling", []),
-            cleaned_data.get("feeling_free_text", ""),
-        ) > 1:
+        if (
+            self._combined_sentiment_count(
+                cleaned_data.get("feeling", []),
+                cleaned_data.get("feeling_free_text", ""),
+            )
+            > 1
+        ):
             message = "Choose only one feeling, either from the list or manual text."
             self.add_error(None, message)
 
-        if self._combined_sentiment_count(
-            cleaned_data.get("action_sentiment", []),
-            cleaned_data.get("action_sentiment_free_text", ""),
-        ) > 1:
-            message = "Choose only one action sentiment, either from the list or manual text."
+        if (
+            self._combined_sentiment_count(
+                cleaned_data.get("action_sentiment", []),
+                cleaned_data.get("action_sentiment_free_text", ""),
+            )
+            > 1
+        ):
+            message = (
+                "Choose only one action sentiment, either from the list or manual text."
+            )
             self.add_error(None, message)
 
         return cleaned_data

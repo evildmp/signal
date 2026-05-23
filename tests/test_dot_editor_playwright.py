@@ -5,7 +5,9 @@ from app.models import Dot
 
 
 @pytest.mark.django_db(transaction=True)
-def test_clicking_dot_opens_editor_dialog_over_grid(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_clicking_dot_opens_editor_dialog_over_grid(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=35, y=65, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -31,7 +33,9 @@ def test_clicking_dot_opens_editor_dialog_over_grid(live_server, jerry_with_expl
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dot_editor_dialog_has_cancel_button_and_no_close_button(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_dot_editor_dialog_has_cancel_button_and_no_close_button(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=55, y=35, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -58,7 +62,9 @@ def test_dot_editor_dialog_has_cancel_button_and_no_close_button(live_server, je
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dot_editor_dialog_does_not_autofocus_private(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_dot_editor_dialog_does_not_autofocus_private(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=57, y=43, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -82,7 +88,9 @@ def test_dot_editor_dialog_does_not_autofocus_private(live_server, jerry_with_ex
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dot_editor_dialog_closes_on_escape(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_dot_editor_dialog_closes_on_escape(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=45, y=45, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -106,7 +114,9 @@ def test_dot_editor_dialog_closes_on_escape(live_server, jerry_with_explicit_tea
 
 
 @pytest.mark.django_db(transaction=True)
-def test_clicking_dot_opens_dialog_without_creating_new_dot(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_clicking_dot_opens_dialog_without_creating_new_dot(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=50, y=50, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -134,7 +144,9 @@ def test_clicking_dot_opens_dialog_without_creating_new_dot(live_server, jerry_w
 
 
 @pytest.mark.django_db(transaction=True)
-def test_saving_team_selection_in_dialog_updates_dot(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_saving_team_selection_in_dialog_updates_dot(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=40, y=60, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -161,11 +173,15 @@ def test_saving_team_selection_in_dialog_updates_dot(live_server, jerry_with_exp
         browser.close()
 
     dot.refresh_from_db()
-    assert set(dot.teams.values_list("id", flat=True)) == {minimum_team_hierarchy["deep_red"].id}
+    assert set(dot.teams.values_list("id", flat=True)) == {
+        minimum_team_hierarchy["deep_red"].id
+    }
 
 
 @pytest.mark.django_db(transaction=True)
-def test_unchecking_all_teams_auto_selects_private(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_unchecking_all_teams_auto_selects_private(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=63, y=26, owner_user=jerry_with_explicit_teams)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -202,7 +218,9 @@ def test_unchecking_all_teams_auto_selects_private(live_server, jerry_with_expli
 
 
 @pytest.mark.django_db(transaction=True)
-def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_deleting_owned_dot_removes_it_from_the_grid(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=63, y=26)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
@@ -240,7 +258,9 @@ def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_exp
 
 
 @pytest.mark.django_db(transaction=True)
-def test_saving_dot_updates_published_label_without_reload(live_server, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_saving_dot_updates_published_label_without_reload(
+    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     dot = Dot.objects.create(x=63, y=26)
     dot.teams.add(minimum_team_hierarchy["blue"])
 

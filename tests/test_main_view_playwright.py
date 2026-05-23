@@ -3,7 +3,9 @@ from playwright.sync_api import expect, sync_playwright
 
 
 @pytest.mark.django_db(transaction=True)
-def test_selecting_my_dots_only_clears_selected_team_checkboxes(live_server, jerry_with_explicit_teams):
+def test_selecting_my_dots_only_clears_selected_team_checkboxes(
+    live_server, jerry_with_explicit_teams
+):
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()

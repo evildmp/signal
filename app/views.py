@@ -14,7 +14,6 @@ from uuid import UUID
 from app.forms import DotEditorForm, DrawerFilterForm
 from app.models import Dot, Team
 
-
 LABEL_LEFT_EDGE_THRESHOLD = 20
 LABEL_RIGHT_EDGE_THRESHOLD = 80
 LABEL_TOP_EDGE_THRESHOLD = 80
@@ -129,7 +128,9 @@ def build_team_tree(teams):
 
 @login_required
 def home(request):
-    visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))
+    visible_teams = list(
+        Team.objects.visible_for_user(request.user, include_implicit=True)
+    )
     team_tree = build_team_tree(visible_teams)
     team_choices = [(team.id, team.name) for team in visible_teams]
     explicit_team_ids = set(
@@ -152,11 +153,15 @@ def home(request):
             }
             drawer_filter_form = DrawerFilterForm(payload, team_choices=team_choices)
         else:
-            drawer_filter_form = DrawerFilterForm(request.POST, team_choices=team_choices)
+            drawer_filter_form = DrawerFilterForm(
+                request.POST, team_choices=team_choices
+            )
 
         if drawer_filter_form.is_valid():
             my_dots_only = drawer_filter_form.cleaned_data.get("enabled", False)
-            selected_team_ids = set() if my_dots_only else drawer_filter_form.cleaned_team_ids()
+            selected_team_ids = (
+                set() if my_dots_only else drawer_filter_form.cleaned_team_ids()
+            )
         else:
             my_dots_only = False
             selected_team_ids = set()
@@ -174,7 +179,9 @@ def home(request):
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     if my_dots_only:
-        raw_tokens = request.POST.getlist("ownership_token") if request.method == "POST" else []
+        raw_tokens = (
+            request.POST.getlist("ownership_token") if request.method == "POST" else []
+        )
         ownership_tokens = []
         for raw_token in raw_tokens:
             try:
@@ -194,7 +201,9 @@ def home(request):
         )
     elif selected_team_ids:
         dots = list(
-            Dot.objects.filter(teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff)
+            Dot.objects.filter(
+                teams__id__in=selected_team_ids, created_at__gte=visibility_cutoff
+            )
             .select_related("owner_user")
             .distinct()
             .order_by("id")
@@ -313,7 +322,9 @@ def dot_edit(request, dot_id):
     if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
 
-    visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))
+    visible_teams = list(
+        Team.objects.visible_for_user(request.user, include_implicit=True)
+    )
     team_tree = build_team_tree(visible_teams)
 
     if request.method == "POST":
@@ -321,11 +332,15 @@ def dot_edit(request, dot_id):
         if form.is_valid():
             selected_team_ids = form.cleaned_team_ids()
             dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
-            dot.owner_user = request.user if form.cleaned_data.get("include_name", False) else None
+            dot.owner_user = (
+                request.user if form.cleaned_data.get("include_name", False) else None
+            )
             dot.feeling = form.cleaned_data.get("feeling", [])
             dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
             dot.action_sentiment = form.cleaned_data.get("action_sentiment", [])
-            dot.action_sentiment_free_text = form.cleaned_data.get("action_sentiment_free_text", "")
+            dot.action_sentiment_free_text = form.cleaned_data.get(
+                "action_sentiment_free_text", ""
+            )
             dot.save(
                 update_fields=[
                     "owner_user",

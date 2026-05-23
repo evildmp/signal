@@ -21,12 +21,16 @@ def test_seed_initial_data_creates_realistic_dot_volume_and_ratios():
     anonymous_ratio = anonymous_count / len(dots)
     assert 0.62 <= anonymous_ratio <= 0.78
 
-    with_feeling = sum(1 for dot in dots if dot.feeling or (dot.feeling_free_text or "").strip())
+    with_feeling = sum(
+        1 for dot in dots if dot.feeling or (dot.feeling_free_text or "").strip()
+    )
     feeling_ratio = with_feeling / len(dots)
     assert 0.32 <= feeling_ratio <= 0.48
 
     with_action = sum(
-        1 for dot in dots if dot.action_sentiment or (dot.action_sentiment_free_text or "").strip()
+        1
+        for dot in dots
+        if dot.action_sentiment or (dot.action_sentiment_free_text or "").strip()
     )
     action_ratio = with_action / len(dots)
     assert 0.14 <= action_ratio <= 0.28

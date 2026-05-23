@@ -5,13 +5,14 @@ from django.core.exceptions import ValidationError
 from app.models import ACTION_SENTIMENTS, Dot, FEELINGS
 
 
-
 @pytest.mark.django_db
 def test_action_sentiment_options_are_non_empty_unique_strings():
     assert isinstance(ACTION_SENTIMENTS, list)
     assert ACTION_SENTIMENTS
     assert all(isinstance(value, str) and value.strip() for value in ACTION_SENTIMENTS)
-    assert len({value.casefold() for value in ACTION_SENTIMENTS}) == len(ACTION_SENTIMENTS)
+    assert len({value.casefold() for value in ACTION_SENTIMENTS}) == len(
+        ACTION_SENTIMENTS
+    )
 
 
 @pytest.mark.django_db

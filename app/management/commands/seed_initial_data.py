@@ -16,7 +16,6 @@ from app.models import (
     TeamMembership,
 )
 
-
 TEAM_TREE = {
     "Organisation": {
         "Colours": {
@@ -66,7 +65,9 @@ USERS_AND_TEAMS = {
 
 def ensure_team_tree(tree, parent=None):
     for team_name, children in tree.items():
-        team, _ = Team.objects.get_or_create(name=team_name, defaults={"parent": parent})
+        team, _ = Team.objects.get_or_create(
+            name=team_name, defaults={"parent": parent}
+        )
         if team.parent_id != (parent.id if parent else None):
             team.parent = parent
             team.save(update_fields=["parent"])
@@ -75,7 +76,9 @@ def ensure_team_tree(tree, parent=None):
 
 def _identifier_for_index(index):
     adjective = DOT_IDENTIFIER_ADJECTIVES[index % len(DOT_IDENTIFIER_ADJECTIVES)]
-    colour = DOT_IDENTIFIER_COLOURS[(index // len(DOT_IDENTIFIER_ADJECTIVES)) % len(DOT_IDENTIFIER_COLOURS)]
+    colour = DOT_IDENTIFIER_COLOURS[
+        (index // len(DOT_IDENTIFIER_ADJECTIVES)) % len(DOT_IDENTIFIER_COLOURS)
+    ]
     noun = DOT_IDENTIFIER_NOUNS[
         (index // (len(DOT_IDENTIFIER_ADJECTIVES) * len(DOT_IDENTIFIER_COLOURS)))
         % len(DOT_IDENTIFIER_NOUNS)
@@ -138,16 +141,24 @@ class Command(BaseCommand):
 
             for team_name in explicit_teams:
                 team = Team.objects.get(name=team_name)
-                _, membership_created = TeamMembership.objects.get_or_create(user=user, team=team)
+                _, membership_created = TeamMembership.objects.get_or_create(
+                    user=user, team=team
+                )
                 if membership_created:
                     created_memberships += 1
 
         for username, explicit_team_names in USERS_AND_TEAMS.items():
             user = users[username]
             explicit_teams = list(Team.objects.explicit_for_user(user).order_by("id"))
-            visible_teams = list(Team.objects.visible_for_user(user, include_implicit=True).order_by("id"))
+            visible_teams = list(
+                Team.objects.visible_for_user(user, include_implicit=True).order_by(
+                    "id"
+                )
+            )
             implicit_only_teams = [
-                team for team in visible_teams if team.id not in {t.id for t in explicit_teams}
+                team
+                for team in visible_teams
+                if team.id not in {t.id for t in explicit_teams}
             ]
 
             dot_count = rng.randint(4, 12)

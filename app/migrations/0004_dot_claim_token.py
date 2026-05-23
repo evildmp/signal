@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0003_dot_teams'),
+        ("app", "0003_dot_teams"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dot',
-            name='claim_token',
+            model_name="dot",
+            name="claim_token",
             field=models.UUIDField(default=uuid.uuid4, editable=False),
         ),
     ]

@@ -38,7 +38,9 @@ def count_home_queries(client):
 
 
 @pytest.mark.django_db
-def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client, jerry_with_explicit_teams):
+def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(
+    client, jerry_with_explicit_teams
+):
     client.force_login(jerry_with_explicit_teams)
 
     response = client.get("/")
@@ -47,7 +49,9 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client, j
 
     visible_team_names = sorted(team.name for team in response.context["visible_teams"])
     selected_team_names = sorted(
-        team.name for team in response.context["visible_teams"] if team.id in response.context["selected_team_ids"]
+        team.name
+        for team in response.context["visible_teams"]
+        if team.id in response.context["selected_team_ids"]
     )
 
     assert visible_team_names == ["Blue", "Colours", "Deep red", "Organisation", "Red"]
@@ -55,7 +59,9 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(client, j
 
 
 @pytest.mark.django_db
-def test_main_view_drawer_exposes_hierarchy_for_jerry(client, jerry_with_explicit_teams):
+def test_main_view_drawer_exposes_hierarchy_for_jerry(
+    client, jerry_with_explicit_teams
+):
     client.force_login(jerry_with_explicit_teams)
 
     response = client.get("/")
@@ -76,7 +82,9 @@ def test_main_view_drawer_exposes_hierarchy_for_jerry(client, jerry_with_explici
 
 
 @pytest.mark.django_db
-def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client, jerry_with_explicit_teams):
+def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(
+    client, jerry_with_explicit_teams
+):
     client.force_login(jerry_with_explicit_teams)
 
     response = post_my_dots_only(client)
@@ -87,7 +95,9 @@ def test_selecting_my_dots_only_marks_it_active_and_clears_selected_teams(client
 
 
 @pytest.mark.django_db
-def test_selecting_a_team_clears_my_dots_only(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_selecting_a_team_clears_my_dots_only(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     client.force_login(jerry_with_explicit_teams)
     blue_team_id = minimum_team_hierarchy["blue"].id
 
@@ -147,7 +157,9 @@ def test_my_dots_only_includes_dot_with_matching_ownership_token(
 
 
 @pytest.mark.django_db
-def test_main_view_shows_only_recent_dots_for_selected_teams(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_main_view_shows_only_recent_dots_for_selected_teams(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     client.force_login(jerry_with_explicit_teams)
 
     organisation = minimum_team_hierarchy["organisation"]
@@ -352,7 +364,9 @@ def test_main_view_query_count_does_not_grow_with_number_of_owner_related_dots(
     baseline_query_count = count_home_queries(client)
 
     for i in range(20):
-        dot = Dot.objects.create(x=(i + 11) % 100, y=(i + 21) % 100, owner_user=jerry_with_explicit_teams)
+        dot = Dot.objects.create(
+            x=(i + 11) % 100, y=(i + 21) % 100, owner_user=jerry_with_explicit_teams
+        )
         dot.teams.add(minimum_team_hierarchy["blue"])
 
     expanded_query_count = count_home_queries(client)

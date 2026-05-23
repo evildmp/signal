@@ -8,7 +8,9 @@ from app.models import Team, TeamMembership
 
 def create_minimum_org_for_jerry():
     organisation, _ = Team.objects.get_or_create(name="Organisation")
-    colours, _ = Team.objects.get_or_create(name="Colours", defaults={"parent": organisation})
+    colours, _ = Team.objects.get_or_create(
+        name="Colours", defaults={"parent": organisation}
+    )
     if colours.parent_id != organisation.id:
         colours.parent = organisation
         colours.save(update_fields=["parent"])
@@ -52,7 +54,8 @@ def test_get_user_teams_includes_implied_ancestor_teams():
     TeamMembership.objects.create(user=user, team=blue)
 
     explicit_names = sorted(
-        team.name for team in Team.objects.visible_for_user(user, include_implicit=False)
+        team.name
+        for team in Team.objects.visible_for_user(user, include_implicit=False)
     )
     implied_names = sorted(
         team.name for team in Team.objects.visible_for_user(user, include_implicit=True)
@@ -118,7 +121,11 @@ def test_visible_for_user_include_implicit_has_query_budget():
     TeamMembership.objects.create(user=user, team=blue)
 
     with CaptureQueriesContext(connection) as queries:
-        list(Team.objects.visible_for_user(user, include_implicit=True).values_list("id", flat=True))
+        list(
+            Team.objects.visible_for_user(user, include_implicit=True).values_list(
+                "id", flat=True
+            )
+        )
 
     # Query budget target for an optimized implementation (no per-team parent-chain queries).
     assert len(queries) <= 3, f"Expected <=3 queries, got {len(queries)}"
