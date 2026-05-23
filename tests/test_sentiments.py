@@ -101,13 +101,13 @@ def test_dot_can_have_action_sentiment_free_text():
 
 
 @pytest.mark.django_db
-def test_dot_owner_user_defaults_to_null():
+def test_dot_user_with_owner_relation_defaults_to_null():
     dot = Dot.objects.create(x=50, y=50)
     assert dot.owner_user is None
 
 
 @pytest.mark.django_db
-def test_dot_can_set_owner_user():
+def test_dot_can_set_user_with_owner_relation():
     user = get_user_model().objects.create_user(username="alice", password="alice")
     dot = Dot.objects.create(x=50, y=50)
     dot.owner_user = user

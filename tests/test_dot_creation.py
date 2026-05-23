@@ -8,6 +8,13 @@ from app.models import Dot, Team
 
 
 @pytest.mark.django_db
+def test_dot_ownership_token_is_generated_on_creation():
+    dot = Dot.objects.create(x=10, y=20)
+
+    assert dot.ownership_token is not None
+
+
+@pytest.mark.django_db
 def test_dot_claim_token_is_generated_on_creation():
     dot = Dot.objects.create(x=10, y=20)
 
@@ -17,11 +24,11 @@ def test_dot_claim_token_is_generated_on_creation():
 
 
 @pytest.mark.django_db
-def test_dot_claim_token_is_unique():
+def test_dot_ownership_token_is_unique():
     first = Dot.objects.create(x=10, y=20)
     second = Dot.objects.create(x=30, y=40)
 
-    assert first.claim_token != second.claim_token
+    assert first.ownership_token != second.ownership_token
 
 
 @pytest.mark.django_db
@@ -82,7 +89,10 @@ def test_move_dot_endpoint_updates_coordinates(client, jerry_with_explicit_teams
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "72", "y": "64", "claim_token": str(dot.claim_token)})
+    response = client.post(
+        f"/dot/{dot.identifier}/move/",
+        {"x": "72", "y": "64", "ownership_token": str(dot.ownership_token)},
+    )
 
     assert response.status_code == 200
     dot.refresh_from_db()
@@ -95,7 +105,10 @@ def test_move_dot_endpoint_rejects_invalid_coordinates(client, jerry_with_explic
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "999", "y": "-2", "claim_token": str(dot.claim_token)})
+    response = client.post(
+        f"/dot/{dot.identifier}/move/",
+        {"x": "999", "y": "-2", "ownership_token": str(dot.ownership_token)},
+    )
 
     assert response.status_code == 400
     dot.refresh_from_db()
@@ -104,11 +117,14 @@ def test_move_dot_endpoint_rejects_invalid_coordinates(client, jerry_with_explic
 
 
 @pytest.mark.django_db
-def test_move_dot_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit_teams):
+def test_move_dot_endpoint_rejects_wrong_ownership_token(client, jerry_with_explicit_teams):
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20)
 
-    response = client.post(f"/dot/{dot.identifier}/move/", {"x": "50", "y": "50", "claim_token": "not-the-right-token"})
+    response = client.post(
+        f"/dot/{dot.identifier}/move/",
+        {"x": "50", "y": "50", "ownership_token": "not-the-right-token"},
+    )
 
     assert response.status_code == 403
     dot.refresh_from_db()
@@ -117,7 +133,7 @@ def test_move_dot_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit
 
 
 @pytest.mark.django_db
-def test_move_dot_endpoint_allows_owner_user_without_claim_token(client, jerry_with_explicit_teams):
+def test_move_dot_endpoint_allows_user_with_owner_relation_without_ownership_token(client, jerry_with_explicit_teams):
     client.force_login(jerry_with_explicit_teams)
     dot = Dot.objects.create(x=10, y=20, owner_user=jerry_with_explicit_teams)
 
@@ -254,7 +270,7 @@ def test_dragging_dot_moves_it_without_creating_new_dot(live_server, jerry_with_
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
-        # Create a dot via the browser so the claim token is stored in localStorage.
+        # Create a dot via the browser so the ownership token is stored in localStorage.
         grid = page.locator(".signal-grid")
         bb = grid.bounding_box()
         page.mouse.click(bb["x"] + bb["width"] * 0.25, bb["y"] + bb["height"] * 0.75)

@@ -8,7 +8,7 @@
     hx-swap="innerHTML"
   >
     {% csrf_token %}
-    <input type="hidden" name="claim_token" value="" />
+    <input type="hidden" name="ownership_token" value="" />
     <h2 class="p-heading--5">Edit dot</h2>
 
     <div class="dot-editor-i-feel">
@@ -93,11 +93,11 @@
 
     var privateCheckbox = form.querySelector('input[name="private"]');
     var teamCheckboxes = form.querySelectorAll('input[name="{{ team_field_name }}"]');
-    var claimTokenInput = form.querySelector('input[name="claim_token"]');
+    var ownershipTokenInput = form.querySelector('input[name="ownership_token"]');
     var deleteButton = form.querySelector('[data-delete-dot]');
     if (!privateCheckbox) return;
 
-    function getStoredClaimToken() {
+    function getStoredOwnershipToken() {
       try {
         var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
         var match = form.getAttribute('hx-post').match(/^\/dot\/([^/]+)\/edit\/$/);
@@ -108,13 +108,13 @@
       }
     }
 
-    function syncClaimToken() {
-      if (!claimTokenInput) return;
-      var token = getStoredClaimToken();
+    function syncOwnershipToken() {
+      if (!ownershipTokenInput) return;
+      var token = getStoredOwnershipToken();
       var isOwnedByUser = form.closest('#dot-editor-dialog').dataset.dotOwnedByUser === '1';
-      claimTokenInput.value = token;
+      ownershipTokenInput.value = token;
       if (deleteButton) {
-        deleteButton.setAttribute('hx-vals', JSON.stringify({ claim_token: token }));
+        deleteButton.setAttribute('hx-vals', JSON.stringify({ ownership_token: token }));
         deleteButton.disabled = !token && !isOwnedByUser;
       }
     }
@@ -263,6 +263,6 @@
       clearTeamsWhenPrivateChecked();
     });
 
-    syncClaimToken();
+    syncOwnershipToken();
   })();
 </script>

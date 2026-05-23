@@ -17,15 +17,15 @@ LABEL_RIGHT_EDGE_THRESHOLD = 80
 LABEL_TOP_EDGE_THRESHOLD = 80
 
 
-def user_can_manage_dot(request, dot, claim_token=None):
-    token = claim_token or ""
-    return dot.owner_user_id == request.user.id or str(dot.claim_token) == token
+def user_can_manage_dot(request, dot, ownership_token=None):
+    token = ownership_token or ""
+    return dot.owner_user_id == request.user.id or str(dot.ownership_token) == token
 
 
-def request_claim_token(request):
+def request_ownership_token(request):
     if request.method == "POST":
-        return request.POST.get("claim_token", "")
-    return request.GET.get("claim_token", "")
+        return request.POST.get("ownership_token", "")
+    return request.GET.get("ownership_token", "")
 
 
 def build_dot_label_position_class_from_coordinates(x, y):
@@ -226,7 +226,7 @@ def create_dot(request):
     dot_html = (
         f'<span class="signal-dot" '
         f'data-dot-identifier="{dot.identifier}" '
-        f'data-claim-token="{dot.claim_token}" '
+        f'data-owned-by-user="0" '
         f'hx-get="/dot/{dot.identifier}/edit/" '
         f'hx-target="#dot-editor-host" '
         f'hx-swap="innerHTML" '
@@ -244,7 +244,9 @@ def create_dot(request):
     )
 
     response = HttpResponse(dot_html + notification_html)
-    response["HX-Trigger-After-Swap"] = json.dumps({"dotClaimed": {"identifier": dot.identifier, "token": str(dot.claim_token)}})
+    response["HX-Trigger-After-Swap"] = json.dumps(
+        {"dotClaimed": {"identifier": dot.identifier, "token": str(dot.ownership_token)}}
+    )
 
     return response
 
@@ -254,8 +256,8 @@ def create_dot(request):
 def move_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
-    claim_token = request_claim_token(request)
-    if not user_can_manage_dot(request, dot, claim_token):
+    ownership_token = request_ownership_token(request)
+    if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
 
     try:
@@ -279,8 +281,8 @@ def move_dot(request, identifier):
 def delete_dot(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
 
-    claim_token = request_claim_token(request)
-    if not user_can_manage_dot(request, dot, claim_token):
+    ownership_token = request_ownership_token(request)
+    if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
 
     dot.delete()
@@ -293,8 +295,8 @@ def delete_dot(request, identifier):
 @login_required
 def dot_edit(request, identifier):
     dot = get_object_or_404(Dot, identifier=identifier)
-    claim_token = request_claim_token(request)
-    if not user_can_manage_dot(request, dot, claim_token):
+    ownership_token = request_ownership_token(request)
+    if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
 
     visible_teams = list(Team.objects.visible_for_user(request.user, include_implicit=True))

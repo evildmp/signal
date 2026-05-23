@@ -281,7 +281,7 @@ def test_dot_editor_post_rejects_action_sentiment_selection_with_manual_text(
 
 
 @pytest.mark.django_db
-def test_dot_editor_post_clears_owner_user_when_show_my_name_is_unchecked(
+def test_dot_editor_post_clears_user_with_owner_relation_when_show_my_name_is_unchecked(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
     client.force_login(jerry_with_explicit_teams)
@@ -326,7 +326,7 @@ def test_dot_delete_endpoint_deletes_owned_dot(client, jerry_with_explicit_teams
 
     response = client.post(
         f"/dot/{dot.identifier}/delete/",
-        {"claim_token": str(dot.claim_token)},
+        {"ownership_token": str(dot.ownership_token)},
     )
 
     assert response.status_code == 200
@@ -335,7 +335,7 @@ def test_dot_delete_endpoint_deletes_owned_dot(client, jerry_with_explicit_teams
 
 
 @pytest.mark.django_db
-def test_dot_delete_endpoint_rejects_wrong_claim_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_dot_delete_endpoint_rejects_wrong_ownership_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
     dot = Dot.objects.create(x=28, y=52)
@@ -343,7 +343,7 @@ def test_dot_delete_endpoint_rejects_wrong_claim_token(client, jerry_with_explic
 
     response = client.post(
         f"/dot/{dot.identifier}/delete/",
-        {"claim_token": "not-the-right-token"},
+        {"ownership_token": "not-the-right-token"},
     )
 
     assert response.status_code == 403
@@ -351,7 +351,7 @@ def test_dot_delete_endpoint_rejects_wrong_claim_token(client, jerry_with_explic
 
 
 @pytest.mark.django_db
-def test_dot_delete_endpoint_allows_owner_user_without_claim_token(
+def test_dot_delete_endpoint_allows_user_with_owner_relation_without_ownership_token(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
     client.force_login(jerry_with_explicit_teams)
@@ -370,7 +370,7 @@ def test_dot_delete_endpoint_allows_owner_user_without_claim_token(
 
 
 @pytest.mark.django_db
-def test_dot_owner_user_can_edit_without_claim_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_dot_user_with_owner_relation_can_edit_without_ownership_token(client, jerry_with_explicit_teams, minimum_team_hierarchy):
     client.force_login(jerry_with_explicit_teams)
 
     dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)

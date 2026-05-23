@@ -217,7 +217,7 @@ def test_deleting_owned_dot_removes_it_from_the_grid(live_server, jerry_with_exp
 
         page.evaluate(
             "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
-            [dot.identifier, str(dot.claim_token)],
+            [dot.identifier, str(dot.ownership_token)],
         )
         page.reload()
 
@@ -255,7 +255,7 @@ def test_saving_dot_updates_published_label_without_reload(live_server, jerry_wi
 
         page.evaluate(
             "([identifier, token]) => localStorage.setItem('dotTokens', JSON.stringify({[identifier]: token}))",
-            [dot.identifier, str(dot.claim_token)],
+            [dot.identifier, str(dot.ownership_token)],
         )
         page.reload()
 

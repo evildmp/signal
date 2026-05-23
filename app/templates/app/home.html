@@ -93,7 +93,6 @@
                 <span
                   class="signal-dot{% if dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
                   data-dot-identifier="{{ dot.identifier }}"
-                  data-claim-token="{{ dot.claim_token }}"
                   data-owned-by-user="{% if dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
                   hx-get="{% url 'dot_edit' dot.identifier %}"
                   hx-target="#dot-editor-host"
@@ -166,21 +165,17 @@
         var labelRightEdgeThreshold = thresholdFromData('labelRightEdgeThreshold', 80);
         var labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
 
-        function matchingClaimTokenForDot(dot, tokens) {
+        function ownershipTokenForDot(dot, tokens) {
           var id = dot.dataset.dotIdentifier;
-          var expectedClaimToken = dot.dataset.claimToken || '';
-          var storedClaimToken = tokens[id] || '';
-
-          if (!storedClaimToken || !expectedClaimToken) return '';
-          return storedClaimToken === expectedClaimToken ? storedClaimToken : '';
+          return tokens[id] || '';
         }
 
         function updateClaimedDotClasses() {
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
           document.querySelectorAll('.signal-dot').forEach(function(dot) {
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
-            var hasMatchingClaimToken = !!matchingClaimTokenForDot(dot, tokens);
-            if (isOwnedByUser || hasMatchingClaimToken) {
+            var hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
+            if (isOwnedByUser || hasOwnershipToken) {
               dot.classList.add('signal-dot--claimed');
             } else {
               dot.classList.remove('signal-dot--claimed');
@@ -188,11 +183,11 @@
           });
         }
 
-        function claimTokenForIdentifier(identifier) {
+        function ownershipTokenForIdentifier(identifier) {
           var dot = document.querySelector('.signal-dot[data-dot-identifier="' + identifier + '"]');
           if (!dot) return '';
           var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-          return matchingClaimTokenForDot(dot, tokens);
+          return ownershipTokenForDot(dot, tokens);
         }
 
         // Initial mark
@@ -217,10 +212,10 @@
           if (!match) return;
 
           var identifier = match[1];
-          var token = claimTokenForIdentifier(identifier);
+          var token = ownershipTokenForIdentifier(identifier);
           if (token) {
             e.detail.parameters = e.detail.parameters || {};
-            e.detail.parameters.claim_token = token;
+            e.detail.parameters.ownership_token = token;
           }
         });
 
@@ -294,7 +289,7 @@
           finishedDrag.dot.style.bottom = snappedPosition.y + '%';
           applyLabelPosition(labelForIdentifier(finishedDrag.dot.dataset.dotIdentifier), snappedPosition.x, snappedPosition.y);
 
-          var claimToken = finishedDrag.claimToken || '';
+          var ownershipToken = finishedDrag.ownershipToken || '';
 
           suppressGridClickUntil = Date.now() + 300;
           htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotIdentifier + '/move/', {
@@ -302,7 +297,7 @@
             values: {
               x: snappedPosition.x,
               y: snappedPosition.y,
-              claim_token: claimToken
+              ownership_token: ownershipToken
             },
             headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
           });
@@ -331,9 +326,9 @@
             var dot = e.target.closest('.signal-dot');
             if (!dot) return;
 
-            var claimToken = claimTokenForIdentifier(dot.dataset.dotIdentifier);
+            var ownershipToken = ownershipTokenForIdentifier(dot.dataset.dotIdentifier);
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
-            if (!claimToken && !isOwnedByUser) return;
+            if (!ownershipToken && !isOwnedByUser) return;
 
             dragState = {
               dot: dot,
@@ -341,7 +336,7 @@
               startClientX: e.clientX,
               startClientY: e.clientY,
               lastPosition: null,
-              claimToken: claimToken
+              ownershipToken: ownershipToken
             };
 
             document.addEventListener('mousemove', onDragMove);
