@@ -6,41 +6,6 @@ from django.test.utils import CaptureQueriesContext
 from app.models import Team, TeamMembership
 
 
-def create_minimum_org_for_jerry():
-    organisation, _ = Team.objects.get_or_create(name="Organisation")
-    colours, _ = Team.objects.get_or_create(
-        name="Colours", defaults={"parent": organisation}
-    )
-    if colours.parent_id != organisation.id:
-        colours.parent = organisation
-        colours.save(update_fields=["parent"])
-
-    red, _ = Team.objects.get_or_create(name="Red", defaults={"parent": colours})
-    if red.parent_id != colours.id:
-        red.parent = colours
-        red.save(update_fields=["parent"])
-
-    deep_red, _ = Team.objects.get_or_create(name="Deep red", defaults={"parent": red})
-    if deep_red.parent_id != red.id:
-        deep_red.parent = red
-        deep_red.save(update_fields=["parent"])
-
-    blue, _ = Team.objects.get_or_create(name="Blue", defaults={"parent": colours})
-    if blue.parent_id != colours.id:
-        blue.parent = colours
-        blue.save(update_fields=["parent"])
-
-    user, created = get_user_model().objects.get_or_create(username="jerry")
-    if created:
-        user.set_password("jerry")
-        user.save(update_fields=["password"])
-
-    TeamMembership.objects.get_or_create(user=user, team=blue)
-    TeamMembership.objects.get_or_create(user=user, team=deep_red)
-
-    return user
-
-
 @pytest.mark.django_db
 def test_get_user_teams_includes_implied_ancestor_teams():
     organisation = Team.objects.create(name="Organisation")
@@ -63,36 +28,6 @@ def test_get_user_teams_includes_implied_ancestor_teams():
 
     assert explicit_names == ["Blue", "Deep red"]
     assert implied_names == ["Blue", "Colours", "Deep red", "Organisation", "Red"]
-
-
-@pytest.mark.django_db
-def test_fixture_setup_creates_hierarchy_users_and_memberships():
-    jerry = create_minimum_org_for_jerry()
-
-    assert Team.objects.count() == 5
-    assert get_user_model().objects.count() == 1
-    assert Team.objects.filter(name="Organisation", parent__isnull=True).exists()
-    assert Team.objects.filter(name="Colours", parent__name="Organisation").exists()
-    assert Team.objects.filter(name="Red", parent__name="Colours").exists()
-    assert Team.objects.filter(name="Deep red", parent__name="Red").exists()
-    assert Team.objects.filter(name="Blue", parent__name="Colours").exists()
-
-    explicit_team_names = sorted(
-        TeamMembership.objects.filter(user=jerry)
-        .select_related("team")
-        .values_list("team__name", flat=True)
-    )
-    assert explicit_team_names == ["Blue", "Deep red"]
-
-
-@pytest.mark.django_db
-def test_fixture_setup_is_idempotent():
-    create_minimum_org_for_jerry()
-    create_minimum_org_for_jerry()
-
-    assert Team.objects.count() == 5
-    assert TeamMembership.objects.count() == 2
-    assert get_user_model().objects.count() == 1
 
 
 @pytest.mark.django_db
