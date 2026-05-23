@@ -1,6 +1,13 @@
 import pytest
 
+from app.forms import DotEditorForm
 from app.models import Dot
+
+
+@pytest.mark.django_db
+def test_dot_editor_form_requires_user():
+    with pytest.raises(ValueError, match="DotEditorForm requires a user"):
+        DotEditorForm(user=None)
 
 
 @pytest.mark.django_db

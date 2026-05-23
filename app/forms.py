@@ -43,8 +43,11 @@ class DotEditorForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
     )
 
-    def __init__(self, *args, dot=None, user=None, **kwargs):
+    def __init__(self, *args, dot=None, user, **kwargs):
         super().__init__(*args, **kwargs)
+        if user is None:
+            raise ValueError("DotEditorForm requires a user")
+
         if dot is not None:
             self.initial["include_name"] = dot.owner_user_id is not None
             self.initial["feeling"] = dot.feeling
@@ -56,11 +59,10 @@ class DotEditorForm(forms.Form):
             ]
             self.initial["private"] = not dot.teams.exists()
 
-        if user is not None:
-            visible_teams = Team.objects.visible_for_user(user, include_implicit=True)
-            self.fields["team_ids"].choices = [
-                (str(team.id), team.name) for team in visible_teams
-            ]
+        visible_teams = Team.objects.visible_for_user(user, include_implicit=True)
+        self.fields["team_ids"].choices = [
+            (str(team.id), team.name) for team in visible_teams
+        ]
 
     @staticmethod
     def _normalize_free_text(raw_text, selected_values):
