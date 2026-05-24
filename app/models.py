@@ -2,9 +2,8 @@ import uuid
 
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.exceptions import FieldError, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 
 import random
@@ -133,24 +132,18 @@ DOT_IDENTIFIER_NOUNS = (
 )
 
 
-def generate_dot_identifier():
-    while True:
-        identifier = "-".join(
-            [
-                random.choice(DOT_IDENTIFIER_ADJECTIVES),
-                random.choice(DOT_IDENTIFIER_COLOURS),
-                random.choice(DOT_IDENTIFIER_NOUNS),
-            ]
-        )
-        try:
-            if not Dot.objects.filter(claim_token=identifier).exists():
-                return identifier
-        except (FieldError, OperationalError, ProgrammingError):
-            try:
-                if not Dot.objects.filter(identifier=identifier).exists():
-                    return identifier
-            except (FieldError, OperationalError, ProgrammingError):
-                return identifier
+def generate_claim_token():
+    return "-".join(
+        [
+            random.choice(DOT_IDENTIFIER_ADJECTIVES),
+            random.choice(DOT_IDENTIFIER_COLOURS),
+            random.choice(DOT_IDENTIFIER_NOUNS),
+        ]
+    )
+
+
+# Alias preserved for historical migrations (0002, 0010).
+generate_dot_identifier = generate_claim_token
 
 
 FEELINGS = [
@@ -212,7 +205,7 @@ class Dot(models.Model):
     )
     teams = models.ManyToManyField(Team, related_name="dots")
     claim_token = models.CharField(
-        max_length=64, default=generate_dot_identifier, editable=False
+        max_length=64, default=generate_claim_token, editable=False
     )
     ownership_token = models.UUIDField(default=uuid.uuid4, editable=False)
     feeling = models.JSONField(default=list, blank=True)
