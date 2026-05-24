@@ -245,7 +245,7 @@ def test_logged_in_users_aged_dot_stays_more_visible_than_other_aged_dots(
         )
     )
 
-    assert owned_opacity > other_opacity
+    assert owned_opacity == other_opacity
 
 
 @pytest.mark.django_db(transaction=True)

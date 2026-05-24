@@ -1,7 +1,7 @@
 <span
-  class="signal-dot{% if dot.is_owned_by_user|default:dot.owner_user_id == request.user.id %} signal-dot--claimed{% endif %}"
+  class="signal-dot{% if dot.is_owned_by_user %} signal-dot--claimed{% endif %}"
   data-dot-id="{{ dot.id }}"
-  data-owned-by-user="{% if dot.is_owned_by_user|default:dot.owner_user_id == request.user.id %}1{% else %}0{% endif %}"
+  data-owned-by-user="{% if dot.is_owned_by_user %}1{% else %}0{% endif %}"
   hx-get="{% url 'dot_edit' dot.id %}"
   hx-target="#dot-editor-host"
   hx-swap="innerHTML"
