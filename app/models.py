@@ -4,10 +4,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.utils import timezone
 
 import random
-from datetime import timedelta
 
 
 def reparent_to_grandparent(collector, field, sub_objs, using):
@@ -65,14 +63,6 @@ class Team(models.Model):
 
     def __str__(self):
         return self.name
-
-    def ancestor_ids(self):
-        ids = []
-        current = self.parent
-        while current is not None:
-            ids.append(current.id)
-            current = current.parent
-        return ids
 
 
 class TeamMembership(models.Model):
@@ -188,9 +178,6 @@ ACTION_SENTIMENTS = [
     "I would be really happy to share my news",
 ]
 
-# Compatibility alias used by historical migration 0006.
-RELATIONAL_WISHES = ACTION_SENTIMENTS
-
 
 class Dot(models.Model):
     x = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
@@ -234,7 +221,3 @@ class Dot(models.Model):
             raise ValidationError(
                 {"action_sentiment": "Contains invalid action sentiment values."}
             )
-
-    def is_visible(self, reference_time=None):
-        now = reference_time or timezone.now()
-        return self.created_at >= (now - timedelta(days=7))
