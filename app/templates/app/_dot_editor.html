@@ -3,6 +3,7 @@
     id="dot-editor-form"
     method="post"
     class="dot-editor-form"
+    data-dot-id="{{ dot.id }}"
     data-team-field-name="{{ team_field_name }}"
     hx-post="{% url 'dot_edit' dot.id %}"
     hx-target="#dot-editor-host"

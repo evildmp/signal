@@ -26,8 +26,23 @@ def test_dot_editor_endpoint_returns_dialog_for_clicked_dot(
     content = response.content.decode()
     assert '<dialog id="dot-editor-dialog"' in content
     assert 'id="dot-editor-form"' in content
-    assert "data-dot-id=" not in content
     assert "<script>" not in content
+
+
+@pytest.mark.django_db
+def test_dot_editor_form_exposes_dot_id_for_token_sync(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get(f"/dot/{dot.id}/edit/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'data-dot-id="{dot.id}"' in content
 
 
 @pytest.mark.django_db

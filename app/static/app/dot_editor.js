@@ -1,13 +1,8 @@
 (function () {
-  function getDotIdFromEditUrl(editUrl) {
-    var match = (editUrl || "").match(/^\/dot\/(\d+)\/edit\/$/);
-    return match ? match[1] : "";
-  }
-
   function getStoredOwnershipToken(form) {
     try {
       var tokens = JSON.parse(localStorage.getItem("dotTokens") || "{}");
-      var dotId = getDotIdFromEditUrl(form.getAttribute("hx-post"));
+      var dotId = form.dataset.dotId || "";
       if (!dotId) return "";
       return tokens[dotId] || "";
     } catch (error) {
