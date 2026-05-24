@@ -95,7 +95,7 @@
       chipInput.setAttribute("placeholder", values.length ? "" : defaultPlaceholder);
     }
 
-    function addValue(value) {
+    function setSingleValue(value) {
       var trimmed = value.trim();
       if (!trimmed) return;
       setValues([trimmed]);
@@ -113,7 +113,7 @@
     checkboxes.forEach(function (checkbox) {
       checkbox.addEventListener("change", function () {
         if (checkbox.checked) {
-          addValue(checkbox.value);
+          setSingleValue(checkbox.value);
         } else {
           removeValue(checkbox.value);
         }
@@ -123,19 +123,19 @@
     chipInput.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== ",") return;
       event.preventDefault();
-      addValue(chipInput.value);
+      setSingleValue(chipInput.value);
       chipInput.value = "";
     });
 
     chipInput.addEventListener("blur", function () {
       if (!chipInput.value.trim()) return;
-      addValue(chipInput.value);
+      setSingleValue(chipInput.value);
       chipInput.value = "";
     });
 
     checkboxes.forEach(function (checkbox) {
       if (checkbox.checked) {
-        addValue(checkbox.value);
+        setSingleValue(checkbox.value);
       }
     });
 
