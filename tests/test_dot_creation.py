@@ -88,8 +88,8 @@ def test_create_dot_response_includes_home_dot_attributes(
 
     # Keep inline create-dot output aligned with home-view dot wiring.
     assert f'data-dot-id="{dot.id}"' in content
-    assert 'class="signal-dot"' in content
-    assert 'data-owned-by-user="0"' in content
+    assert 'class="signal-dot' in content
+    assert 'data-owned-by-user="1"' in content
     assert f'hx-get="/dot/{dot.id}/edit/"' in content
 
 
@@ -235,6 +235,32 @@ def test_clicking_grid_places_a_dot_and_shows_notification(
     # Label near top-left should go to the right of the dot
     class_attr = label.get_attribute("class")
     assert "signal-dot-label--x-right" in class_attr
+
+
+@pytest.mark.django_db(transaction=True)
+def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
+    authenticated_page,
+):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
+    bounding_box = grid.bounding_box()
+    authenticated_page.mouse.click(
+        bounding_box["x"] + bounding_box["width"] * 0.4,
+        bounding_box["y"] + bounding_box["height"] * 0.6,
+    )
+
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+
+    new_dot = authenticated_page.locator(".signal-dot").last
+    expect(new_dot).to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
+
+    border_color = authenticated_page.evaluate(
+        "el => getComputedStyle(el).borderTopColor",
+        new_dot.element_handle(),
+    )
+    assert border_color == "rgb(17, 17, 17)"
 
 
 @pytest.mark.django_db(transaction=True)

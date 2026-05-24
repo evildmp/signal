@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.db import transaction
 from django.db.models import Q
 
+import hashlib
 import json
 from datetime import timedelta
 from uuid import UUID
@@ -18,6 +19,8 @@ from app.models import Dot, Team
 LABEL_LEFT_EDGE_THRESHOLD = 20
 LABEL_RIGHT_EDGE_THRESHOLD = 80
 LABEL_TOP_EDGE_THRESHOLD = 80
+DOT_VISIBILITY_WINDOW = timedelta(days=7)
+DOT_MIN_VISIBLE_OPACITY = 0.35
 
 
 def user_can_manage_dot(request, dot, ownership_token=None):
@@ -34,6 +37,28 @@ def request_ownership_token(request):
         return request.POST.get("ownership_token", "")
 
     return ""
+
+
+def request_ownership_tokens(request):
+    raw_tokens = []
+
+    if request.method == "POST":
+        raw_tokens.extend(request.POST.getlist("ownership_token"))
+    else:
+        raw_tokens.extend(request.GET.getlist("ownership_token"))
+
+    header_token = request.headers.get("X-Ownership-Token", "")
+    if header_token:
+        raw_tokens.append(header_token)
+
+    tokens = set()
+    for raw_token in raw_tokens:
+        try:
+            tokens.add(UUID(str(raw_token)))
+        except (TypeError, ValueError):
+            continue
+
+    return tokens
 
 
 def dot_is_claimable(dot):
@@ -57,6 +82,37 @@ def build_dot_label_position_class_from_coordinates(x, y):
 
 def build_dot_label_position_class(dot):
     return build_dot_label_position_class_from_coordinates(dot.x, dot.y)
+
+
+def build_dot_colour_key(request, dot):
+    if dot.owner_user_id and dot.owner_user_id != request.user.id:
+        return f"owner:{dot.owner_user_id}"
+    return f"dot:{dot.id}:{dot.claim_token}"
+
+
+def build_dot_unclaimed_colour(request, dot):
+    digest = hashlib.sha256(build_dot_colour_key(request, dot).encode("utf-8")).digest()
+    hue = digest[0] % 360
+
+    # Keep generated colours away from the claimed orange range.
+    if 12 <= hue <= 42:
+        hue = (hue + 90) % 360
+
+    return f"hsl({hue}, 78%, 48%)"
+
+
+def build_dot_age_opacity(dot, now):
+    age_ratio = (now - dot.created_at) / DOT_VISIBILITY_WINDOW
+    clamped_ratio = max(0.0, min(1.0, age_ratio))
+    return 1.0 - ((1.0 - DOT_MIN_VISIBLE_OPACITY) * clamped_ratio)
+
+
+def build_dot_style(request, dot, now):
+    return (
+        f"left: {dot.x}%; bottom: {dot.y}%; "
+        f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)}; "
+        f"--dot-age-opacity: {build_dot_age_opacity(dot, now):.3f};"
+    )
 
 
 def _split_label_values(value):
@@ -203,18 +259,11 @@ def home(request):
             team_choices=team_choices,
         )
 
-    visibility_cutoff = timezone.now() - timedelta(days=7)
-    if my_dots_only:
-        raw_tokens = (
-            request.POST.getlist("ownership_token") if request.method == "POST" else []
-        )
-        ownership_tokens = []
-        for raw_token in raw_tokens:
-            try:
-                ownership_tokens.append(UUID(str(raw_token)))
-            except (TypeError, ValueError):
-                continue
+    now = timezone.now()
+    visibility_cutoff = now - DOT_VISIBILITY_WINDOW
+    ownership_tokens = request_ownership_tokens(request)
 
+    if my_dots_only:
         management_filter = Q(owner_user=request.user)
         if ownership_tokens:
             management_filter |= Q(ownership_token__in=ownership_tokens)
@@ -238,9 +287,14 @@ def home(request):
         dots = []
 
     for dot in dots:
+        dot.is_owned_by_user = (
+            dot.owner_user_id == request.user.id
+            or dot.ownership_token in ownership_tokens
+        )
         dot.published_label_groups = build_published_label_groups(dot)
         dot.published_label_parts = build_published_label_parts(dot)
         dot.published_label_class = build_dot_label_position_class(dot)
+        dot.display_style = build_dot_style(request, dot, now)
 
     return render(
         request,
@@ -280,7 +334,10 @@ def create_dot(request):
     team_names = [team.name for team in explicit_teams]
     team_list = " and ".join(team_names)
 
+    now = timezone.now()
+    dot.is_owned_by_user = True
     dot.published_label_class = build_dot_label_position_class(dot)
+    dot.display_style = build_dot_style(request, dot, now)
     dot_html = render_to_string(
         "app/_dot.html",
         {"dot": dot},
@@ -389,7 +446,9 @@ def dot_edit(request, dot_id):
 
             payload = {
                 "dotId": dot.id,
-                "ownedByUser": dot.owner_user_id == request.user.id,
+                "ownedByUser": user_can_manage_dot(
+                    request, dot, request_ownership_token(request)
+                ),
                 "labelParts": build_published_label_parts(dot),
                 "labelGroups": build_published_label_groups(dot),
                 "labelClass": build_dot_label_position_class(dot),

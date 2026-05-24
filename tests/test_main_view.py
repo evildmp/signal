@@ -208,6 +208,25 @@ def test_main_view_shows_only_recent_dots_for_selected_teams(
 
 
 @pytest.mark.django_db
+def test_main_view_does_not_render_dot_older_than_a_week(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    stale_dot = Dot.objects.create(x=30, y=40)
+    stale_dot.teams.add(minimum_team_hierarchy["blue"])
+    Dot.objects.filter(id=stale_dot.id).update(
+        created_at=timezone.now() - timedelta(days=8)
+    )
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'data-dot-id="{stale_dot.id}"' not in content
+
+
+@pytest.mark.django_db
 def test_main_view_marks_owner_related_dot_as_claimed_without_token(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
@@ -226,6 +245,50 @@ def test_main_view_marks_owner_related_dot_as_claimed_without_token(
     )
     assert match is not None
     assert "signal-dot--claimed" in match.group(1)
+
+
+@pytest.mark.django_db
+def test_main_view_claimed_class_uses_owner_relation_or_ownership_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    relation_owned_dot = Dot.objects.create(
+        x=20, y=30, owner_user=jerry_with_explicit_teams
+    )
+    relation_owned_dot.teams.add(minimum_team_hierarchy["blue"])
+
+    token_owned_dot = Dot.objects.create(x=40, y=50)
+    token_owned_dot.teams.add(minimum_team_hierarchy["blue"])
+
+    unowned_dot = Dot.objects.create(x=60, y=70)
+    unowned_dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.get("/", {"ownership_token": str(token_owned_dot.ownership_token)})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+
+    relation_match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{relation_owned_dot.id}"',
+        content,
+    )
+    token_match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{token_owned_dot.id}"',
+        content,
+    )
+    unowned_match = re.search(
+        rf'<span\s+class="([^"]*)"\s+data-dot-id="{unowned_dot.id}"',
+        content,
+    )
+
+    assert relation_match is not None
+    assert token_match is not None
+    assert unowned_match is not None
+
+    assert "signal-dot--claimed" in relation_match.group(1)
+    assert "signal-dot--claimed" in token_match.group(1)
+    assert "signal-dot--claimed" not in unowned_match.group(1)
 
 
 @pytest.mark.django_db

@@ -117,7 +117,9 @@
   width: 0.85rem;
   height: 0.85rem;
   border-radius: 999px;
-  background: #0e8420;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  background: transparent;
   transform: translate(-50%, 50%);
   cursor: pointer;
   z-index: 2;
@@ -125,8 +127,19 @@
   transition: box-shadow 0.18s;
 }
 
+.signal-dot-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--dot-display-color, var(--dot-unclaimed-color, #0e8420));
+  opacity: var(--dot-age-opacity, 1);
+}
+
 .signal-dot--claimed {
-  background: #e95420;
+  --dot-display-color: #e95420;
+  border-color: #111;
+  border-width: 1px;
+  box-shadow: none;
   z-index: 12;
 }
 
