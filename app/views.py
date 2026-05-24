@@ -109,7 +109,7 @@ def build_dot_age_opacity(dot, now):
 
 def build_dot_style(request, dot, now):
     return (
-        f"left: {dot.x}%; bottom: {dot.y}%; "
+        f"--dot-x: {dot.x}; --dot-y: {dot.y}; "
         f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)}; "
         f"--dot-age-opacity: {build_dot_age_opacity(dot, now):.3f};"
     )

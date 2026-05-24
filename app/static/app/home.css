@@ -60,6 +60,7 @@
   height: 56dvh;
   max-height: calc(100vh - 12rem);
   max-height: calc(100dvh - 12rem);
+  --dot-edge-inset: 0.75rem;
   overflow: hidden;
   background: #fcfcfc;
   border: 1px solid #cdcdcd;
@@ -120,6 +121,16 @@
   border: 1px solid transparent;
   box-sizing: border-box;
   background: transparent;
+  left: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-x, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
+  bottom: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-y, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
   transform: translate(-50%, 50%);
   cursor: pointer;
   z-index: 2;
@@ -194,6 +205,16 @@
 
 .signal-dot-label {
   position: absolute;
+  left: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-x, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
+  bottom: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-y, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
   background: #fdf3e7;
   border: 1px solid #cdcdcd;
   color: #111;
@@ -239,6 +260,16 @@
 
 .signal-dot-published-label {
   position: absolute;
+  left: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-x, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
+  bottom: clamp(
+    var(--dot-edge-inset, 0.75rem),
+    calc(var(--dot-y, 0) * 1%),
+    calc(100% - var(--dot-edge-inset, 0.75rem))
+  );
   display: inline-flex;
   flex-direction: column;
   gap: 0.08rem;

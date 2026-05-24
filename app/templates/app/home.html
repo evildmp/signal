@@ -124,7 +124,7 @@
                   <span
                     class="signal-dot-published-label {{ dot.published_label_class }}"
                     data-dot-id="{{ dot.id }}"
-                    style="left: {{ dot.x }}%; bottom: {{ dot.y }}%;"
+                    style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};"
                   >
                     {% if dot.published_label_groups.username %}
                       <span class="signal-dot-published-username">{{ dot.published_label_groups.username }}</span>
@@ -284,8 +284,8 @@
 
         function applyLabelPosition(label, x, y) {
           if (!label) return;
-          label.style.left = x + '%';
-          label.style.bottom = y + '%';
+          label.style.setProperty('--dot-x', String(x));
+          label.style.setProperty('--dot-y', String(y));
           label.classList.remove(
             'signal-dot-label--above',
             'signal-dot-label--below',
@@ -314,8 +314,8 @@
             y: Math.round(finishedDrag.lastPosition.y)
           };
 
-          finishedDrag.dot.style.left = snappedPosition.x + '%';
-          finishedDrag.dot.style.bottom = snappedPosition.y + '%';
+          finishedDrag.dot.style.setProperty('--dot-x', String(snappedPosition.x));
+          finishedDrag.dot.style.setProperty('--dot-y', String(snappedPosition.y));
           applyLabelPosition(labelForDotId(finishedDrag.dot.dataset.dotId), snappedPosition.x, snappedPosition.y);
 
           var ownershipToken = finishedDrag.ownershipToken || '';
@@ -341,8 +341,8 @@
 
           var position = gridPercentFromPointer(e.clientX, e.clientY);
           dragState.lastPosition = position;
-          dragState.dot.style.left = position.x.toFixed(2) + '%';
-          dragState.dot.style.bottom = position.y.toFixed(2) + '%';
+          dragState.dot.style.setProperty('--dot-x', position.x.toFixed(2));
+          dragState.dot.style.setProperty('--dot-y', position.y.toFixed(2));
           applyLabelPosition(labelForDotId(dragState.dot.dataset.dotId), position.x, position.y);
         }
 

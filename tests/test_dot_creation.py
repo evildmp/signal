@@ -314,6 +314,33 @@ def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(
 
 
 @pytest.mark.django_db(transaction=True)
+def test_dot_created_near_corner_stays_fully_inside_grid(authenticated_page):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
+    bounding_box = grid.bounding_box()
+
+    authenticated_page.mouse.click(
+        bounding_box["x"] + 1,
+        bounding_box["y"] + 1,
+    )
+
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+
+    dot = authenticated_page.locator(".signal-dot").last
+    expect(dot).to_be_visible()
+
+    grid_bb = grid.bounding_box()
+    dot_bb = dot.bounding_box()
+
+    assert dot_bb["x"] >= grid_bb["x"]
+    assert dot_bb["y"] >= grid_bb["y"]
+    assert dot_bb["x"] + dot_bb["width"] <= grid_bb["x"] + grid_bb["width"]
+    assert dot_bb["y"] + dot_bb["height"] <= grid_bb["y"] + grid_bb["height"]
+
+
+@pytest.mark.django_db(transaction=True)
 def test_dragging_dot_moves_it_without_creating_new_dot(
     authenticated_page, minimum_team_hierarchy
 ):
