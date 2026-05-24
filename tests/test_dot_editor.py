@@ -27,6 +27,7 @@ def test_dot_editor_endpoint_returns_dialog_for_clicked_dot(
     assert '<dialog id="dot-editor-dialog"' in content
     assert 'id="dot-editor-form"' in content
     assert "data-dot-id=" not in content
+    assert "<script>" not in content
 
 
 @pytest.mark.django_db
@@ -144,6 +145,19 @@ def test_dot_editor_endpoint_renders_sentiment_inputs(
     assert 'name="feeling_free_text"' in content
     assert 'name="action_sentiment_free_text"' in content
     assert 'name="include_name"' in content
+
+
+@pytest.mark.django_db
+def test_home_template_loads_external_dot_editor_script(
+    client, jerry_with_explicit_teams
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert '/static/app/dot_editor.js' in content
 
 
 @pytest.mark.django_db
