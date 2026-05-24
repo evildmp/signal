@@ -171,8 +171,16 @@
         }
 
         var grid = document.getElementById('signal-grid');
-        var suppressGridClickUntil = 0;
+        var suppressNextGridClick = false;
         var dragState = null;
+        var gridPointerGesture = null;
+
+        function suppressGridClickAfterPointerUp() {
+          suppressNextGridClick = true;
+          setTimeout(function () {
+            suppressNextGridClick = false;
+          }, 0);
+        }
 
         function thresholdFromData(attributeName, fallback) {
           if (!grid) return fallback;
@@ -312,7 +320,7 @@
 
           var ownershipToken = finishedDrag.ownershipToken || '';
 
-          suppressGridClickUntil = Date.now() + 300;
+          suppressGridClickAfterPointerUp();
           htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotId + '/move/', {
             swap: 'none',
             values: {
@@ -342,14 +350,54 @@
           endDrag();
         }
 
+        function onGridPointerMove(e) {
+          if (!gridPointerGesture) return;
+
+          if (Math.abs(e.clientX - gridPointerGesture.startClientX) + Math.abs(e.clientY - gridPointerGesture.startClientY) > 3) {
+            gridPointerGesture.didMove = true;
+          }
+        }
+
+        function onGridPointerUp() {
+          if (!gridPointerGesture) return;
+
+          document.removeEventListener('mousemove', onGridPointerMove);
+          document.removeEventListener('mouseup', onGridPointerUp);
+
+          var finishedGesture = gridPointerGesture;
+          gridPointerGesture = null;
+
+          if (finishedGesture.didMove) {
+            suppressGridClickAfterPointerUp();
+          }
+        }
+
+        function beginGridPointerGesture(e) {
+          gridPointerGesture = {
+            didMove: false,
+            startClientX: e.clientX,
+            startClientY: e.clientY
+          };
+
+          document.addEventListener('mousemove', onGridPointerMove);
+          document.addEventListener('mouseup', onGridPointerUp);
+        }
+
         if (grid) {
           grid.addEventListener('mousedown', function (e) {
             var dot = e.target.closest('.signal-dot');
-            if (!dot) return;
+
+            if (!dot) {
+              beginGridPointerGesture(e);
+              return;
+            }
 
             var ownershipToken = ownershipTokenForDotId(dot.dataset.dotId);
             var isOwnedByUser = dot.dataset.ownedByUser === '1';
-            if (!ownershipToken && !isOwnedByUser) return;
+            if (!ownershipToken && !isOwnedByUser) {
+              beginGridPointerGesture(e);
+              return;
+            }
 
             dragState = {
               dot: dot,
@@ -366,7 +414,7 @@
           });
 
           grid.addEventListener('click', function (e) {
-            if (Date.now() <= suppressGridClickUntil) return;
+            if (suppressNextGridClick) return;
             if (e.target.closest('.signal-dot, .signal-axis')) return;
             var position = gridPercentFromPointer(e.clientX, e.clientY);
             var x = Math.round(position.x);
@@ -382,7 +430,7 @@
         }
 
         document.addEventListener('click', function (e) {
-          if (Date.now() > suppressGridClickUntil) return;
+          if (!suppressNextGridClick) return;
           if (!e.target.closest('.signal-dot')) return;
           e.preventDefault();
           e.stopPropagation();

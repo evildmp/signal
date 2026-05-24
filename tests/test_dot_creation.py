@@ -381,6 +381,7 @@ def test_dragging_not_owned_dot_does_nothing(
 
         dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
         expect(dot_locator).to_be_visible()
+        initial_dots = page.locator(".signal-dot").count()
 
         token = page.evaluate(
             "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
@@ -399,9 +400,43 @@ def test_dragging_not_owned_dot_does_nothing(
 
         style_after = dot_locator.get_attribute("style")
         assert style_after == style_before
+        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
 
         browser.close()
 
     dot.refresh_from_db()
     assert dot.x == 25
     assert dot.y == 75
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dragging_on_grid_background_does_not_create_dot(
+    live_server, jerry_with_explicit_teams
+):
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+        grid = page.locator(".signal-grid")
+        expect(grid).to_be_visible()
+        initial_dots = page.locator(".signal-dot").count()
+
+        bb = grid.bounding_box()
+        start_x = bb["x"] + bb["width"] * 0.2
+        start_y = bb["y"] + bb["height"] * 0.7
+        end_x = bb["x"] + bb["width"] * 0.8
+        end_y = bb["y"] + bb["height"] * 0.3
+
+        page.mouse.move(start_x, start_y)
+        page.mouse.down()
+        page.mouse.move(end_x, end_y)
+        page.mouse.up()
+
+        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
+
+        browser.close()
