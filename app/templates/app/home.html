@@ -383,8 +383,16 @@
           document.addEventListener('mouseup', onGridPointerUp);
         }
 
+        function clearTransientDotLabels() {
+          document.querySelectorAll('.signal-dot-label').forEach(function (label) {
+            label.remove();
+          });
+        }
+
         if (grid) {
           grid.addEventListener('mousedown', function (e) {
+            clearTransientDotLabels();
+
             var dot = e.target.closest('.signal-dot');
 
             if (!dot) {
@@ -485,6 +493,16 @@
           dot.dataset.ownedByUser = e.detail.ownedByUser ? '1' : '0';
           updateClaimedDotClasses();
 
+          if (e.detail.notificationHtml && grid) {
+            clearTransientDotLabels();
+            var container = document.createElement('div');
+            container.innerHTML = e.detail.notificationHtml.trim();
+            var transientLabel = container.firstElementChild;
+            if (transientLabel) {
+              grid.appendChild(transientLabel);
+            }
+          }
+
           var label = labelForDotId(dotId);
           var groups = e.detail.labelGroups || {};
           var hasGroups = !!(groups.username || groups.feelings || groups.actions);
@@ -518,6 +536,12 @@
 
           var x = parseFloat(dot.style.left);
           var y = parseFloat(dot.style.bottom);
+          if (!Number.isFinite(x)) {
+            x = parseFloat(dot.style.getPropertyValue('--dot-x'));
+          }
+          if (!Number.isFinite(y)) {
+            y = parseFloat(dot.style.getPropertyValue('--dot-y'));
+          }
           applyLabelPosition(label, x, y);
         });
       })();

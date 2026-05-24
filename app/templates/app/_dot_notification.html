@@ -1,3 +1,11 @@
 <span class="signal-dot-label {{ dot.published_label_class }}" style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};">
-  Published to <span class="team-names">{{ team_list }}</span>.
+  <span class="signal-dot-label-line">
+    Published to:
+    <span class="team-names">
+      {% for team_name in team_names %}
+        <strong>{{ team_name }}</strong>{% if not forloop.last %}{% if forloop.revcounter == 2 %} and {% else %}, {% endif %}{% endif %}
+      {% endfor %}
+    </span>.
+  </span>
+  <span class="signal-dot-label-line">Claim token: <strong>{{ dot.claim_token }}</strong></span>
 </span>

@@ -226,7 +226,6 @@
   pointer-events: none;
   z-index: 10;
   opacity: 1;
-  animation: signal-dot-label-fade 6s ease forwards;
 }
 
 /* Default: above, horizontally centered */
@@ -256,6 +255,10 @@
 
 .signal-dot-label .team-names {
   font-weight: 600;
+}
+
+.signal-dot-label-line {
+  display: block;
 }
 
 .signal-dot-published-label {

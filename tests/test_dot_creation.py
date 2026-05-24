@@ -238,6 +238,75 @@ def test_clicking_grid_places_a_dot_and_shows_notification(
 
 
 @pytest.mark.django_db(transaction=True)
+def test_create_notification_stays_visible_until_next_grid_interaction(
+    authenticated_page,
+):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    bb = grid.bounding_box()
+
+    # First grid interaction creates the dot and shows the notification label.
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.2, bb["y"] + bb["height"] * 0.2)
+    first_label = authenticated_page.locator(".signal-dot-label").last
+    expect(first_label).to_be_visible()
+
+    # Keep waiting beyond the historical fade duration to prove it persists.
+    authenticated_page.wait_for_timeout(7000)
+    expect(first_label).to_be_visible()
+
+    # Next grid interaction should dismiss the previous notification and show a fresh one.
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.8, bb["y"] + bb["height"] * 0.8)
+    expect(authenticated_page.locator(".signal-dot-label")).to_have_count(1)
+    second_label = authenticated_page.locator(".signal-dot-label").last
+    expect(second_label).to_be_visible()
+    assert second_label.element_handle() != first_label.element_handle()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_create_notification_includes_claim_token(authenticated_page):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
+    bb = grid.bounding_box()
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.35, bb["y"] + bb["height"] * 0.35)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+
+    new_dot = authenticated_page.locator(".signal-dot").last
+    dot_id = int(new_dot.get_attribute("data-dot-id"))
+    dot = Dot.objects.get(id=dot_id)
+
+    label = authenticated_page.locator(".signal-dot-label").last
+    expect(label).to_be_visible()
+    expect(label).to_contain_text(f"Claim token: {dot.claim_token}")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_create_notification_renders_lines_and_bold_values(authenticated_page):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    bb = grid.bounding_box()
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.3, bb["y"] + bb["height"] * 0.3)
+
+    label = authenticated_page.locator(".signal-dot-label").last
+    expect(label).to_be_visible()
+
+    line_count = label.locator(".signal-dot-label-line").count()
+    assert line_count == 2
+
+    strong_texts = label.locator("strong").all_text_contents()
+    assert "Blue" in strong_texts
+    assert "Deep red" in strong_texts
+
+    claim_token = strong_texts[-1]
+    assert "-" in claim_token
+    assert claim_token.count("-") == 2
+    assert "and" not in strong_texts
+
+
+@pytest.mark.django_db(transaction=True)
 def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
     authenticated_page,
 ):
@@ -352,6 +421,14 @@ def test_dragging_dot_moves_it_without_creating_new_dot(
 
     dot_locator = authenticated_page.locator(".signal-dot").first
     dot_id = dot_locator.get_attribute("data-dot-id")
+
+    authenticated_page.wait_for_function(
+        "(id) => {"
+        "  const tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');"
+        "  return Boolean(tokens[id]);"
+        "}",
+        arg=dot_id,
+    )
 
     token_before_refresh = authenticated_page.evaluate(
         "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",

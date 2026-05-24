@@ -332,7 +332,6 @@ def create_dot(request):
     dot.teams.set(explicit_teams)
 
     team_names = [team.name for team in explicit_teams]
-    team_list = " and ".join(team_names)
 
     now = timezone.now()
     dot.is_owned_by_user = True
@@ -345,7 +344,7 @@ def create_dot(request):
     )
     notification_html = render_to_string(
         "app/_dot_notification.html",
-        {"dot": dot, "team_list": team_list},
+        {"dot": dot, "team_names": team_names},
         request=request,
     )
 
@@ -453,6 +452,16 @@ def dot_edit(request, dot_id):
                 "labelGroups": build_published_label_groups(dot),
                 "labelClass": build_dot_label_position_class(dot),
             }
+
+            team_names = list(dot.teams.order_by("name").values_list("name", flat=True))
+            if not team_names:
+                team_names = ["Private"]
+
+            payload["notificationHtml"] = render_to_string(
+                "app/_dot_notification.html",
+                {"dot": dot, "team_names": team_names},
+                request=request,
+            )
             response = HttpResponse("")
             response["HX-Trigger"] = json.dumps({"dotUpdated": payload})
             return response

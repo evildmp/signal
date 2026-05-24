@@ -306,3 +306,31 @@ def test_saving_dot_updates_published_label_without_reload(
     expect(label).to_be_visible()
     expect(label).to_contain_text("jerry")
     expect(label).to_contain_text("happy")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_saving_dot_shows_transient_published_notification(
+    page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=51, y=44)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    page.evaluate(
+        "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
+        [str(dot.id), str(dot.ownership_token)],
+    )
+    page.reload()
+
+    page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
+    dialog = page.locator("dialog#dot-editor-dialog")
+    expect(dialog).to_be_visible()
+
+    dialog.get_by_role("button", name="Save").click()
+    expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
+
+    transient_label = page.locator(".signal-dot-label").last
+    expect(transient_label).to_be_visible()
+    expect(transient_label).to_contain_text("Published to")
+    expect(transient_label).to_contain_text(f"Claim token: {dot.claim_token}")
