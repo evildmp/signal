@@ -221,10 +221,10 @@ class Command(BaseCommand):
                         dot.action_sentiment = []
                         dot.action_sentiment_free_text = rng.choice(
                             [
-                                "Could use a quick chat",
-                                "Need a sounding board",
-                                "Would value support",
-                                "Want to share this",
+                                "I could use a quick chat",
+                                "I need a sounding board",
+                                "I want help",
+                                "I want to share this",
                             ]
                         )
                     else:
