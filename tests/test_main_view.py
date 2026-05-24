@@ -393,4 +393,4 @@ def test_main_view_query_count_does_not_grow_with_number_of_owner_related_dots(
 
     expanded_query_count = count_home_queries(client)
 
-    assert expanded_query_count <= baseline_query_count + 2
+    assert expanded_query_count <= baseline_query_count + 1

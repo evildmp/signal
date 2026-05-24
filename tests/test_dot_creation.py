@@ -8,6 +8,12 @@ from playwright.sync_api import expect
 from app.models import Dot, Team
 
 
+def extract_dot_id_from_create_response(content):
+    match = re.search(r'data-dot-id="(\d+)"', content)
+    assert match is not None, "create_dot response did not include data-dot-id"
+    return int(match.group(1))
+
+
 @pytest.mark.django_db
 def test_dot_ownership_token_is_generated_on_creation():
     dot = Dot.objects.create(x=10, y=20)
@@ -45,7 +51,9 @@ def test_create_dot_endpoint_publishes_to_user_explicit_teams(
 
     assert response.status_code == 200
 
-    dot = Dot.objects.latest("created_at")
+    content = response.content.decode()
+    dot_id = extract_dot_id_from_create_response(content)
+    dot = Dot.objects.get(id=dot_id)
     assert dot.x == 42
     assert dot.y == 73
 
@@ -58,7 +66,6 @@ def test_create_dot_endpoint_publishes_to_user_explicit_teams(
     assert dot_team_names == explicit_team_names
 
     # Notification mentions the explicit teams
-    content = response.content.decode()
     for team_name in explicit_team_names:
         assert team_name in content
 
@@ -75,8 +82,9 @@ def test_create_dot_response_includes_home_dot_attributes(
     )
 
     assert response.status_code == 200
-    dot = Dot.objects.latest("created_at")
     content = response.content.decode()
+    dot_id = extract_dot_id_from_create_response(content)
+    dot = Dot.objects.get(id=dot_id)
 
     # Keep inline create-dot output aligned with home-view dot wiring.
     assert f'data-dot-id="{dot.id}"' in content
