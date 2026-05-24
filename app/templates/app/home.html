@@ -438,7 +438,7 @@
 
         document.body.addEventListener('htmx:afterSwap', function (e) {
           if (e.detail.target && e.detail.target.id === 'dot-editor-host') {
-            var dialog = e.detail.target.querySelector('#dot-editor-dialog');
+            var dialog = e.detail.target.querySelector('dialog');
             if (dialog && !dialog.open) {
               dialog.showModal();
               dialog.focus();

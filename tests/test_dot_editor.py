@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch
+from django.contrib.auth import get_user_model
 
 from app.forms import DotEditorForm
 from app.models import Dot, Team
@@ -402,6 +403,64 @@ def test_dot_editor_endpoint_rejects_user_without_ownership(
     dot.teams.add(minimum_team_hierarchy["blue"])
 
     response = client.get(f"/dot/{dot.id}/edit/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="dot-claim-dialog"' in content
+    assert 'name="claim_token"' in content
+
+
+@pytest.mark.django_db
+def test_dot_claim_endpoint_rejects_invalid_claim_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.id}/claim/",
+        {"claim_token": "wrong-token"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_dot_claim_endpoint_returns_ownership_token_for_valid_claim_token(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.id}/claim/",
+        {"claim_token": dot.claim_token},
+    )
+
+    assert response.status_code == 200
+    assert "HX-Trigger" in response.headers
+    assert f'"dotId": {dot.id}' in response.headers["HX-Trigger"]
+    assert str(dot.ownership_token) in response.headers["HX-Trigger"]
+
+
+@pytest.mark.django_db
+def test_dot_claim_endpoint_rejects_dot_with_owner_relation(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    tina = get_user_model().objects.create_user(username="tina", password="tina")
+    dot = Dot.objects.create(x=22, y=74, owner_user=tina)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.id}/claim/",
+        {"claim_token": dot.claim_token},
+    )
 
     assert response.status_code == 403
 

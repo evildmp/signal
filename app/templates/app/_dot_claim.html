@@ -1,0 +1,25 @@
+<dialog id="dot-claim-dialog" aria-label="Dot claim dialog" tabindex="-1">
+  <form
+    id="dot-claim-form"
+    method="post"
+    hx-post="{% url 'dot_claim' dot.id %}"
+    hx-target="#dot-editor-host"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <h2 class="p-heading--5">Claim dot</h2>
+    <p class="p-text--small">Enter the claim token for this dot to continue.</p>
+
+    <label for="dot-claim-token" class="u-sv1">Claim token</label>
+    <input id="dot-claim-token" name="claim_token" type="text" required autofocus>
+
+    {% if claim_error %}
+      <p class="p-notification--negative">{{ claim_error }}</p>
+    {% endif %}
+
+    <div class="dot-editor-actions">
+      <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
+      <button type="submit" class="p-button--positive">Claim</button>
+    </div>
+  </form>
+</dialog>

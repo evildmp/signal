@@ -36,6 +36,10 @@ def request_ownership_token(request):
     return ""
 
 
+def dot_is_claimable(dot):
+    return dot.owner_user_id is None
+
+
 def build_dot_label_position_class_from_coordinates(x, y):
     label_y = "below" if y > LABEL_TOP_EDGE_THRESHOLD else "above"
     if x < LABEL_LEFT_EDGE_THRESHOLD:
@@ -125,6 +129,25 @@ def build_team_tree(teams):
             roots.append(node)
 
     return roots
+
+
+def build_dot_editor_context(request, dot):
+    visible_teams = list(
+        Team.objects.visible_for_user(request.user, include_implicit=True)
+    )
+    team_tree = build_team_tree(visible_teams)
+    team_choices = [(team.id, team.name) for team in visible_teams]
+    form = DotEditorForm(dot=dot, user=request.user, team_choices=team_choices)
+    selected_team_ids = set(dot.teams.values_list("id", flat=True))
+
+    return {
+        "dot": dot,
+        "form": form,
+        "team_tree": team_tree,
+        "selected_team_ids": selected_team_ids,
+        "team_field_name": form["team_ids"].html_name,
+        "team_choices": team_choices,
+    }
 
 
 @login_required
@@ -322,15 +345,17 @@ def delete_dot(request, dot_id):
 @require_http_methods(["GET", "POST"])
 def dot_edit(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
-    ownership_token = request_ownership_token(request)
-    if not user_can_manage_dot(request, dot, ownership_token):
+    if request.method == "GET" and "ownership_token" in request.GET:
         return HttpResponse(status=403)
 
-    visible_teams = list(
-        Team.objects.visible_for_user(request.user, include_implicit=True)
-    )
-    team_tree = build_team_tree(visible_teams)
-    team_choices = [(team.id, team.name) for team in visible_teams]
+    ownership_token = request_ownership_token(request)
+    if not user_can_manage_dot(request, dot, ownership_token):
+        if request.method == "GET" and dot_is_claimable(dot):
+            return render(request, "app/_dot_claim.html", {"dot": dot})
+        return HttpResponse(status=403)
+
+    editor_context = build_dot_editor_context(request, dot)
+    team_choices = editor_context["team_choices"]
 
     if request.method == "POST":
         form = DotEditorForm(
@@ -379,8 +404,8 @@ def dot_edit(request, dot_id):
                 if str(team_id).isdigit()
             }
     else:
-        form = DotEditorForm(dot=dot, user=request.user, team_choices=team_choices)
-        selected_team_ids = set(dot.teams.values_list("id", flat=True))
+        form = editor_context["form"]
+        selected_team_ids = editor_context["selected_team_ids"]
 
     return render(
         request,
@@ -388,8 +413,27 @@ def dot_edit(request, dot_id):
         {
             "dot": dot,
             "form": form,
-            "team_tree": team_tree,
+            "team_tree": editor_context["team_tree"],
             "selected_team_ids": selected_team_ids,
             "team_field_name": form["team_ids"].html_name,
         },
     )
+
+
+@login_required
+@require_POST
+def dot_claim(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
+    if not dot_is_claimable(dot):
+        return HttpResponse(status=403)
+
+    submitted_claim_token = request.POST.get("claim_token", "").strip()
+    if submitted_claim_token != dot.claim_token:
+        return HttpResponse(status=403)
+
+    editor_context = build_dot_editor_context(request, dot)
+    response = render(request, "app/_dot_editor.html", editor_context)
+    response["HX-Trigger"] = json.dumps(
+        {"dotClaimed": {"dotId": dot.id, "token": str(dot.ownership_token)}}
+    )
+    return response

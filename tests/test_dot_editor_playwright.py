@@ -1,5 +1,6 @@
 import pytest
 from playwright.sync_api import expect
+from django.contrib.auth import get_user_model
 
 from app.models import Dot
 
@@ -21,6 +22,98 @@ def test_clicking_dot_opens_editor_dialog_over_grid(
     expect(dialog).to_be_visible()
     expect(dialog).to_have_attribute("open", "")
     expect(dialog).not_to_contain_text(dot.claim_token)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_clicking_unclaimed_dot_opens_claim_dialog(
+    page, login_jerry, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=35, y=65)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
+
+    claim_dialog = page.locator("dialog#dot-claim-dialog")
+    expect(claim_dialog).to_be_visible()
+    expect(claim_dialog).to_have_attribute("open", "")
+    expect(claim_dialog.get_by_label("Claim token")).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_valid_claim_token_grants_ownership_token_and_opens_editor(
+    page, login_jerry, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=35, y=65)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
+    claim_dialog = page.locator("dialog#dot-claim-dialog")
+    expect(claim_dialog).to_be_visible()
+
+    claim_dialog.get_by_label("Claim token").fill(dot.claim_token)
+    claim_dialog.get_by_role("button", name="Claim").click()
+
+    expect(page.locator("dialog#dot-editor-dialog")).to_be_visible()
+    stored_token = page.evaluate(
+        "dotId => JSON.parse(localStorage.getItem('dotTokens') || '{}')[String(dotId)]",
+        str(dot.id),
+    )
+    assert stored_token == str(dot.ownership_token)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_clicking_dot_with_owner_relation_is_ignored(
+    page, login_jerry, minimum_team_hierarchy
+):
+    tina = get_user_model().objects.create_user(username="tina", password="tina")
+    dot = Dot.objects.create(x=35, y=65, owner_user=tina)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
+
+    expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
+    expect(page.locator("dialog#dot-claim-dialog")).to_have_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dragging_dot_with_owner_relation_does_nothing(
+    page, login_jerry, minimum_team_hierarchy
+):
+    tina = get_user_model().objects.create_user(username="tina", password="tina")
+    dot = Dot.objects.create(x=25, y=75, owner_user=tina)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+    initial_dots = page.locator(".signal-dot").count()
+
+    style_before = dot_locator.get_attribute("style")
+    dot_box = dot_locator.bounding_box()
+    page.mouse.move(
+        dot_box["x"] + dot_box["width"] / 2,
+        dot_box["y"] + dot_box["height"] / 2,
+    )
+    page.mouse.down()
+    page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
+    page.mouse.up()
+
+    style_after = dot_locator.get_attribute("style")
+    assert style_after == style_before
+    expect(page.locator(".signal-dot")).to_have_count(initial_dots)
+    expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
+    expect(page.locator("dialog#dot-claim-dialog")).to_have_count(0)
+
+    dot.refresh_from_db()
+    assert dot.x == 25
+    assert dot.y == 75
 
 
 @pytest.mark.django_db(transaction=True)
