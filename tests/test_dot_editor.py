@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 
 from app.forms import DotEditorForm
-from app.models import Dot
+from app.models import Dot, Team
 
 
 @pytest.mark.django_db
@@ -493,6 +493,50 @@ def test_dot_user_with_owner_relation_can_edit_without_ownership_token(
         minimum_team_hierarchy["deep_red"].id
     }
     assert dot.owner_user == jerry_with_explicit_teams
+
+
+@pytest.mark.django_db
+def test_dot_editor_get_calls_visible_for_user_once(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=22, y=74, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with patch(
+        "app.models.Team.objects.visible_for_user",
+        wraps=Team.objects.visible_for_user,
+    ) as visible_for_user:
+        response = client.get(f"/dot/{dot.id}/edit/")
+
+    assert response.status_code == 200
+    assert visible_for_user.call_count == 1
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_calls_visible_for_user_once(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with patch(
+        "app.models.Team.objects.visible_for_user",
+        wraps=Team.objects.visible_for_user,
+    ) as visible_for_user:
+        response = client.post(
+            f"/dot/{dot.id}/edit/",
+            {
+                "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+                "include_name": "on",
+            },
+        )
+
+    assert response.status_code == 200
+    assert visible_for_user.call_count == 1
 
 
 @pytest.mark.django_db

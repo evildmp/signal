@@ -1,6 +1,6 @@
 from django import forms
 
-from app.models import ACTION_SENTIMENTS, FEELINGS, Team
+from app.models import ACTION_SENTIMENTS, FEELINGS
 
 
 class DrawerFilterForm(forms.Form):
@@ -43,7 +43,7 @@ class DotEditorForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
     )
 
-    def __init__(self, *args, dot=None, user, **kwargs):
+    def __init__(self, *args, dot=None, user, team_choices=(), **kwargs):
         super().__init__(*args, **kwargs)
         if user is None:
             raise ValueError("DotEditorForm requires a user")
@@ -59,9 +59,8 @@ class DotEditorForm(forms.Form):
             ]
             self.initial["private"] = not dot.teams.exists()
 
-        visible_teams = Team.objects.visible_for_user(user, include_implicit=True)
         self.fields["team_ids"].choices = [
-            (str(team.id), team.name) for team in visible_teams
+            (str(team_id), team_name) for team_id, team_name in team_choices
         ]
 
     @staticmethod

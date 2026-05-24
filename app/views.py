@@ -330,9 +330,15 @@ def dot_edit(request, dot_id):
         Team.objects.visible_for_user(request.user, include_implicit=True)
     )
     team_tree = build_team_tree(visible_teams)
+    team_choices = [(team.id, team.name) for team in visible_teams]
 
     if request.method == "POST":
-        form = DotEditorForm(request.POST, dot=dot, user=request.user)
+        form = DotEditorForm(
+            request.POST,
+            dot=dot,
+            user=request.user,
+            team_choices=team_choices,
+        )
         if form.is_valid():
             selected_team_ids = form.cleaned_team_ids()
             with transaction.atomic():
@@ -373,7 +379,7 @@ def dot_edit(request, dot_id):
                 if str(team_id).isdigit()
             }
     else:
-        form = DotEditorForm(dot=dot, user=request.user)
+        form = DotEditorForm(dot=dot, user=request.user, team_choices=team_choices)
         selected_team_ids = set(dot.teams.values_list("id", flat=True))
 
     return render(
