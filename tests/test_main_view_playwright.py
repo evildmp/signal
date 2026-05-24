@@ -1,63 +1,44 @@
 import pytest
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import expect
 
 
 @pytest.mark.django_db(transaction=True)
 def test_selecting_my_dots_only_clears_selected_team_checkboxes(
-    live_server, jerry_with_explicit_teams
+    page,
+    login_jerry,
 ):
+    login_jerry(page)
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    blue = page.get_by_label("Blue")
+    deep_red = page.get_by_label("Deep red")
+    my_dots_only = page.get_by_label("My dots only")
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    expect(blue).to_be_checked()
+    expect(deep_red).to_be_checked()
+    expect(my_dots_only).not_to_be_checked()
 
-        blue = page.get_by_label("Blue")
-        deep_red = page.get_by_label("Deep red")
-        my_dots_only = page.get_by_label("My dots only")
+    my_dots_only.check()
 
-        expect(blue).to_be_checked()
-        expect(deep_red).to_be_checked()
-        expect(my_dots_only).not_to_be_checked()
-
-        my_dots_only.check()
-
-        expect(my_dots_only).to_be_checked()
-        expect(blue).not_to_be_checked()
-        expect(deep_red).not_to_be_checked()
-
-        browser.close()
+    expect(my_dots_only).to_be_checked()
+    expect(blue).not_to_be_checked()
+    expect(deep_red).not_to_be_checked()
 
 
 @pytest.mark.django_db(transaction=True)
-def test_selecting_a_team_clears_my_dots_only(live_server, jerry_with_explicit_teams):
+def test_selecting_a_team_clears_my_dots_only(page, login_jerry):
+    login_jerry(page)
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    blue = page.get_by_label("Blue")
+    deep_red = page.get_by_label("Deep red")
+    my_dots_only = page.get_by_label("My dots only")
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    my_dots_only.check()
 
-        blue = page.get_by_label("Blue")
-        deep_red = page.get_by_label("Deep red")
-        my_dots_only = page.get_by_label("My dots only")
+    expect(my_dots_only).to_be_checked()
+    expect(blue).not_to_be_checked()
+    expect(deep_red).not_to_be_checked()
 
-        my_dots_only.check()
+    blue.check()
 
-        expect(my_dots_only).to_be_checked()
-        expect(blue).not_to_be_checked()
-        expect(deep_red).not_to_be_checked()
-
-        blue.check()
-
-        expect(blue).to_be_checked()
-        expect(my_dots_only).not_to_be_checked()
-
-        browser.close()
+    expect(blue).to_be_checked()
+    expect(my_dots_only).not_to_be_checked()

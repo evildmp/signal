@@ -3,7 +3,7 @@ import re
 import pytest
 from django.test import override_settings
 from django.utils.html import escape
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import expect
 
 from app.models import Dot, Team
 
@@ -203,159 +203,115 @@ def test_move_dot_endpoint_allows_user_with_owner_relation_without_ownership_tok
 
 @pytest.mark.django_db(transaction=True)
 def test_clicking_grid_places_a_dot_and_shows_notification(
-    live_server, jerry_with_explicit_teams
+    authenticated_page,
 ):
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    # Click near the top-left corner
+    bounding_box = grid.bounding_box()
+    authenticated_page.mouse.click(
+        bounding_box["x"] + bounding_box["width"] * 0.1,
+        bounding_box["y"] + bounding_box["height"] * 0.1,
+    )
 
-        grid = page.locator(".signal-grid")
-        expect(grid).to_be_visible()
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
 
-        initial_dot_count = page.locator(".signal-dot").count()
+    label = authenticated_page.locator(".signal-dot-label")
+    expect(label).to_be_visible()
+    expect(label).to_contain_text("Blue")
+    expect(label).to_contain_text("Deep red")
 
-        # Click near the top-left corner
-        bounding_box = grid.bounding_box()
-        page.mouse.click(
-            bounding_box["x"] + bounding_box["width"] * 0.1,
-            bounding_box["y"] + bounding_box["height"] * 0.1,
-        )
-
-        expect(page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
-
-        label = page.locator(".signal-dot-label")
-        expect(label).to_be_visible()
-        expect(label).to_contain_text("Blue")
-        expect(label).to_contain_text("Deep red")
-
-        # Label near top-left should go to the right of the dot
-        class_attr = label.get_attribute("class")
-        assert "signal-dot-label--x-right" in class_attr
-
-        browser.close()
+    # Label near top-left should go to the right of the dot
+    class_attr = label.get_attribute("class")
+    assert "signal-dot-label--x-right" in class_attr
 
 
 @pytest.mark.django_db(transaction=True)
-def test_label_positions_near_edges(live_server, jerry_with_explicit_teams):
+def test_label_positions_near_edges(authenticated_page):
     """Labels near grid edges should flip position to stay visible."""
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+    bb = grid.bounding_box()
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
-
-        grid = page.locator(".signal-grid")
-        expect(grid).to_be_visible()
-        bb = grid.bounding_box()
-
-        # Click near bottom-right → label should be to the left of the dot
-        page.mouse.click(bb["x"] + bb["width"] * 0.95, bb["y"] + bb["height"] * 0.95)
-        label = page.locator(".signal-dot-label").last
-        expect(label).to_be_visible()
-        class_attr = label.get_attribute("class")
-        assert "signal-dot-label--x-left" in class_attr
-
-        browser.close()
+    # Click near bottom-right -> label should be to the left of the dot
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.95, bb["y"] + bb["height"] * 0.95)
+    label = authenticated_page.locator(".signal-dot-label").last
+    expect(label).to_be_visible()
+    class_attr = label.get_attribute("class")
+    assert "signal-dot-label--x-left" in class_attr
 
 
 @pytest.mark.django_db(transaction=True)
 def test_label_is_entirely_below_dot_when_dot_is_at_top_of_grid(
-    live_server, jerry_with_explicit_teams
+    authenticated_page,
 ):
     """When a dot is placed at the very top of the grid, every part of the
     label must be below (greater screen y than) the bottom of the dot."""
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+    bb = grid.bounding_box()
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    initial_count = authenticated_page.locator(".signal-dot").count()
 
-        grid = page.locator(".signal-grid")
-        expect(grid).to_be_visible()
-        bb = grid.bounding_box()
+    # Click at 50% x, 2px from the top edge -> y coordinate near 100
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.5, bb["y"] + 2)
 
-        initial_count = page.locator(".signal-dot").count()
+    # Wait for the new dot and label to appear
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_count + 1)
 
-        # Click at 50% x, 2px from the top edge → y coordinate near 100
-        page.mouse.click(bb["x"] + bb["width"] * 0.5, bb["y"] + 2)
+    dot = authenticated_page.locator(".signal-dot").last
+    label = authenticated_page.locator(".signal-dot-label").last
 
-        # Wait for the new dot and label to appear
-        expect(page.locator(".signal-dot")).to_have_count(initial_count + 1)
+    expect(label).to_be_visible()
 
-        dot = page.locator(".signal-dot").last
-        label = page.locator(".signal-dot-label").last
+    dot_bb = dot.bounding_box()
+    label_bb = label.bounding_box()
 
-        expect(label).to_be_visible()
-
-        dot_bb = dot.bounding_box()
-        label_bb = label.bounding_box()
-
-        # The top of the label must be at or below the bottom of the dot
-        assert label_bb["y"] >= dot_bb["y"] + dot_bb["height"], (
-            f"Label top ({label_bb['y']:.1f}) is above dot bottom "
-            f"({dot_bb['y'] + dot_bb['height']:.1f}) — label overlaps or is above the dot"
-        )
-
-        browser.close()
+    # The top of the label must be at or below the bottom of the dot
+    assert label_bb["y"] >= dot_bb["y"] + dot_bb["height"], (
+        f"Label top ({label_bb['y']:.1f}) is above dot bottom "
+        f"({dot_bb['y'] + dot_bb['height']:.1f}) - label overlaps or is above the dot"
+    )
 
 
 @pytest.mark.django_db(transaction=True)
 def test_dragging_dot_moves_it_without_creating_new_dot(
-    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+    authenticated_page, minimum_team_hierarchy
 ):
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    # Create a dot via the browser so the ownership token is stored in localStorage.
+    grid = authenticated_page.locator(".signal-grid")
+    bb = grid.bounding_box()
+    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.25, bb["y"] + bb["height"] * 0.75)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(1)
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    dot_locator = authenticated_page.locator(".signal-dot").first
+    dot_id = dot_locator.get_attribute("data-dot-id")
 
-        # Create a dot via the browser so the ownership token is stored in localStorage.
-        grid = page.locator(".signal-grid")
-        bb = grid.bounding_box()
-        page.mouse.click(bb["x"] + bb["width"] * 0.25, bb["y"] + bb["height"] * 0.75)
-        expect(page.locator(".signal-dot")).to_have_count(1)
+    token_before_refresh = authenticated_page.evaluate(
+        "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
+        dot_id,
+    )
+    assert token_before_refresh is not None
 
-        dot_locator = page.locator(".signal-dot").first
-        dot_id = dot_locator.get_attribute("data-dot-id")
+    authenticated_page.reload()
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(1)
 
-        token_before_refresh = page.evaluate(
-            "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
-            dot_id,
-        )
-        assert token_before_refresh is not None
+    initial_dots = authenticated_page.locator(".signal-dot").count()
 
-        page.reload()
-        expect(page.locator(".signal-dot")).to_have_count(1)
+    dot_box = dot_locator.bounding_box()
+    authenticated_page.mouse.move(
+        dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2
+    )
+    authenticated_page.mouse.down()
+    authenticated_page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
+    authenticated_page.mouse.up()
 
-        initial_dots = page.locator(".signal-dot").count()
-
-        dot_box = dot_locator.bounding_box()
-        page.mouse.move(
-            dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2
-        )
-        page.mouse.down()
-        page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
-        page.mouse.up()
-
-        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
-        browser.close()
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dots)
 
     from app.models import Dot as DotModel
 
@@ -365,44 +321,35 @@ def test_dragging_dot_moves_it_without_creating_new_dot(
 
 @pytest.mark.django_db(transaction=True)
 def test_dragging_not_owned_dot_does_nothing(
-    live_server, jerry_with_explicit_teams, minimum_team_hierarchy
+    authenticated_page, minimum_team_hierarchy
 ):
     dot = Dot.objects.create(x=25, y=75)
     dot.teams.add(minimum_team_hierarchy["blue"])
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    authenticated_page.reload()
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    dot_locator = authenticated_page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+    initial_dots = authenticated_page.locator(".signal-dot").count()
 
-        dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
-        expect(dot_locator).to_be_visible()
-        initial_dots = page.locator(".signal-dot").count()
+    token = authenticated_page.evaluate(
+        "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
+        str(dot.id),
+    )
+    assert token is None
 
-        token = page.evaluate(
-            "(id) => JSON.parse(localStorage.getItem('dotTokens') || '{}')[id] || null",
-            str(dot.id),
-        )
-        assert token is None
+    style_before = dot_locator.get_attribute("style")
+    dot_box = dot_locator.bounding_box()
+    authenticated_page.mouse.move(
+        dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2
+    )
+    authenticated_page.mouse.down()
+    authenticated_page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
+    authenticated_page.mouse.up()
 
-        style_before = dot_locator.get_attribute("style")
-        dot_box = dot_locator.bounding_box()
-        page.mouse.move(
-            dot_box["x"] + dot_box["width"] / 2, dot_box["y"] + dot_box["height"] / 2
-        )
-        page.mouse.down()
-        page.mouse.move(dot_box["x"] + 120, dot_box["y"] - 90)
-        page.mouse.up()
-
-        style_after = dot_locator.get_attribute("style")
-        assert style_after == style_before
-        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
-
-        browser.close()
+    style_after = dot_locator.get_attribute("style")
+    assert style_after == style_before
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dots)
 
     dot.refresh_from_db()
     assert dot.x == 25
@@ -411,32 +358,21 @@ def test_dragging_not_owned_dot_does_nothing(
 
 @pytest.mark.django_db(transaction=True)
 def test_dragging_on_grid_background_does_not_create_dot(
-    live_server, jerry_with_explicit_teams
+    authenticated_page,
 ):
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+    initial_dots = authenticated_page.locator(".signal-dot").count()
 
-        page.goto(f"{live_server.url}/login/")
-        page.locator('input[name="username"]').fill("jerry")
-        page.locator('input[name="password"]').fill("jerry")
-        page.get_by_role("button", name="Log in").click()
+    bb = grid.bounding_box()
+    start_x = bb["x"] + bb["width"] * 0.2
+    start_y = bb["y"] + bb["height"] * 0.7
+    end_x = bb["x"] + bb["width"] * 0.8
+    end_y = bb["y"] + bb["height"] * 0.3
 
-        grid = page.locator(".signal-grid")
-        expect(grid).to_be_visible()
-        initial_dots = page.locator(".signal-dot").count()
+    authenticated_page.mouse.move(start_x, start_y)
+    authenticated_page.mouse.down()
+    authenticated_page.mouse.move(end_x, end_y)
+    authenticated_page.mouse.up()
 
-        bb = grid.bounding_box()
-        start_x = bb["x"] + bb["width"] * 0.2
-        start_y = bb["y"] + bb["height"] * 0.7
-        end_x = bb["x"] + bb["width"] * 0.8
-        end_y = bb["y"] + bb["height"] * 0.3
-
-        page.mouse.move(start_x, start_y)
-        page.mouse.down()
-        page.mouse.move(end_x, end_y)
-        page.mouse.up()
-
-        expect(page.locator(".signal-dot")).to_have_count(initial_dots)
-
-        browser.close()
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dots)

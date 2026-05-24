@@ -1,7 +1,12 @@
+import os
+
 import pytest
 from django.contrib.auth import get_user_model
 
 from app.models import Team, TeamMembership
+
+
+os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 
 @pytest.fixture
@@ -31,3 +36,19 @@ def jerry_with_explicit_teams(minimum_team_hierarchy):
         ]
     )
     return jerry
+
+
+@pytest.fixture
+def login_jerry(live_server, jerry_with_explicit_teams):
+    def _login(page):
+        page.goto(f"{live_server.url}/login/")
+        page.locator('input[name="username"]').fill("jerry")
+        page.locator('input[name="password"]').fill("jerry")
+        page.get_by_role("button", name="Log in").click()
+
+    return _login
+
+@pytest.fixture
+def authenticated_page(page, login_jerry):
+    login_jerry(page)
+    return page
