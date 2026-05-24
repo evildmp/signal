@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 
 from app.forms import DotEditorForm
 from app.models import Dot
@@ -492,3 +493,30 @@ def test_dot_user_with_owner_relation_can_edit_without_ownership_token(
         minimum_team_hierarchy["deep_red"].id
     }
     assert dot.owner_user == jerry_with_explicit_teams
+
+
+@pytest.mark.django_db
+def test_dot_editor_post_rolls_back_team_changes_when_save_fails(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dot = Dot.objects.create(x=28, y=52, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    with patch.object(Dot, "save", side_effect=RuntimeError("boom")):
+        with pytest.raises(RuntimeError, match="boom"):
+            client.post(
+                f"/dot/{dot.id}/edit/",
+                {
+                    "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
+                    "feeling": ["happy"],
+                    "action_sentiment": ["I need help"],
+                    "include_name": "on",
+                },
+            )
+
+    dot.refresh_from_db()
+    assert set(dot.teams.values_list("id", flat=True)) == {
+        minimum_team_hierarchy["blue"].id
+    }

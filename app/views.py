@@ -5,6 +5,7 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
+from django.db import transaction
 from django.db.models import Q
 
 import json
@@ -334,25 +335,26 @@ def dot_edit(request, dot_id):
         form = DotEditorForm(request.POST, dot=dot, user=request.user)
         if form.is_valid():
             selected_team_ids = form.cleaned_team_ids()
-            dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
-            dot.owner_user = (
-                request.user if form.cleaned_data.get("include_name", False) else None
-            )
-            dot.feeling = form.cleaned_data.get("feeling", [])
-            dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
-            dot.action_sentiment = form.cleaned_data.get("action_sentiment", [])
-            dot.action_sentiment_free_text = form.cleaned_data.get(
-                "action_sentiment_free_text", ""
-            )
-            dot.save(
-                update_fields=[
-                    "owner_user",
-                    "feeling",
-                    "feeling_free_text",
-                    "action_sentiment",
-                    "action_sentiment_free_text",
-                ]
-            )
+            with transaction.atomic():
+                dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
+                dot.owner_user = (
+                    request.user if form.cleaned_data.get("include_name", False) else None
+                )
+                dot.feeling = form.cleaned_data.get("feeling", [])
+                dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
+                dot.action_sentiment = form.cleaned_data.get("action_sentiment", [])
+                dot.action_sentiment_free_text = form.cleaned_data.get(
+                    "action_sentiment_free_text", ""
+                )
+                dot.save(
+                    update_fields=[
+                        "owner_user",
+                        "feeling",
+                        "feeling_free_text",
+                        "action_sentiment",
+                        "action_sentiment_free_text",
+                    ]
+                )
 
             payload = {
                 "dotId": dot.id,
