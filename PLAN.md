@@ -1,5 +1,7 @@
 # Plan
 
+This plan exists to keep an LLM agent on track.
+
 1. [x] Scaffold the project foundation: Django project, app, config, pytest/django-pytest, Playwright, templates, static files, and Vanilla integration. This is the only blocking setup phase.
 
 2. [x] Model the core domain: hierarchical teams, explicit memberships, dots, team publication, claim tokens, identifier generation, implied ancestor membership, and seven-day fade logic.
@@ -20,8 +22,8 @@
 
 10. [x] Add published-dot label display: show name label only when enabled, render selected sentiments/free text clearly, and keep labels readable without breaking click/drag interactions.
 
-11. [ ] Extend seed data to produce realistic dots matching the brief's counts and percentages (4-12 dots per user over the last week, 66% explicit teams, 70% anonymous, 40% feelings, 20% relational wishes).
+11. [x] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
 
-12. [ ] Add claim-by-identifier for unowned dots: prompt for the identifier, issue a claim token if it matches, then allow edits.
+12. [x] Add an initial help screen that shows the first a user encounters the application; a "Using Signal" button or link appears in case the user needs to see it again.
 
-13. [ ] Harden and verify: seed determinism, anonymity guarantees, responsive drawer behaviour, and full story coverage.
+13. [ ] Add Team admin membership editing: in Team admin, allow adding/removing user memberships for the selected team; do the same for User admin; create tests for both.

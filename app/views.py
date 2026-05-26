@@ -14,7 +14,7 @@ from datetime import timedelta
 from uuid import UUID
 
 from app.forms import DotEditorForm, DrawerFilterForm
-from app.models import Dot, Team
+from app.models import Dot, Team, SignalOnboardingState
 
 LABEL_LEFT_EDGE_THRESHOLD = 20
 LABEL_RIGHT_EDGE_THRESHOLD = 80
@@ -296,6 +296,11 @@ def home(request):
         dot.published_label_class = build_dot_label_position_class(dot)
         dot.display_style = build_dot_style(request, dot, now)
 
+    onboarding_state = getattr(request.user, "signal_onboarding_state", None)
+    show_signal_onboarding = not (
+        onboarding_state and onboarding_state.using_signal_seen
+    )
+
     return render(
         request,
         "app/home.html",
@@ -307,11 +312,23 @@ def home(request):
             "drawer_filter_form": drawer_filter_form,
             "team_field_name": drawer_filter_form["team_ids"].html_name,
             "dots": dots,
+            "show_signal_onboarding": show_signal_onboarding,
             "label_left_edge_threshold": LABEL_LEFT_EDGE_THRESHOLD,
             "label_right_edge_threshold": LABEL_RIGHT_EDGE_THRESHOLD,
             "label_top_edge_threshold": LABEL_TOP_EDGE_THRESHOLD,
         },
     )
+
+
+@login_required
+@require_POST
+def dismiss_signal_onboarding(request):
+    onboarding_state, _ = SignalOnboardingState.objects.get_or_create(user=request.user)
+    if not onboarding_state.using_signal_seen:
+        onboarding_state.using_signal_seen = True
+        onboarding_state.save(update_fields=["using_signal_seen"])
+
+    return HttpResponse("")
 
 
 @login_required

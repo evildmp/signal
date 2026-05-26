@@ -59,6 +59,35 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(
 
 
 @pytest.mark.django_db
+def test_first_visit_shows_using_signal_modal(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="signal-onboarding-dialog"' in content
+    assert "Using Signal" in content
+
+
+@pytest.mark.django_db
+def test_dismissing_using_signal_modal_hides_it_on_next_home_visit(
+    client, jerry_with_explicit_teams
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    dismiss_response = client.post("/onboarding/signal/dismiss/")
+    assert dismiss_response.status_code == 200
+
+    response = client.get("/")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="signal-onboarding-dialog"' in content
+    assert 'data-show-on-load="0"' in content
+    assert '>Using Signal</a>' in content
+
+
+@pytest.mark.django_db
 def test_home_rejects_put_method(client, jerry_with_explicit_teams):
     client.force_login(jerry_with_explicit_teams)
 

@@ -18,7 +18,8 @@ You are not permitted to act on a plan without my explicit go-ahead.
 
 Commit messages are in the past tense.
 
-You will not use numbered lists in your responses, because they are irritating.
+You will not use numbered lists in your responses, because they are irritating. Don't use lists at all unless you are actually listing things. When explaining, just write normal prose. Use meaningful headings where appropriate.
+
 
 ### Initial data
 
@@ -97,7 +98,7 @@ By default, each dot is associated with the team(s) that the user is explcitly a
 
 A dot can show sentiments that the user chooses.
 
-One is a list of 30 feelings, such as sad, happy, lonely, tired, worried, relaxed, optimistic. The last item should be "I find it hard to describe what I feel". The user can select more than one of these, and also add a sentiment not already listed.
+One is the current built-in list of feelings (as defined in the FEELINGS vocabulary), such as sad, happy, lonely, tired, worried, relaxed, optimistic. The user can select more than one of these, and also add a sentiment not already listed.
 
 Another is a list of feelings or wishes connected to how they related to others, including:
 
@@ -159,5 +160,5 @@ jerry can click on the dot, and edit its attributes. He sees its unique identifi
 
 jerry can drag his dot to a different position.
 
-If jerry tries to edit a dot that he doesn't have a claim token for, a dialog box opens inviting him to enter its unique identifier. If be has the right identifier, then he gets a claim token for it.
+If jerry tries to edit a dot that he doesn't have a claim token for, a dialog box opens inviting him to enter its claim token. If he has the claim token, then he gets an ownership_token for it.
 

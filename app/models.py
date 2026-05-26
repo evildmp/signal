@@ -82,6 +82,18 @@ class TeamMembership(models.Model):
         return f"{self.user.username} -> {self.team.name}"
 
 
+class SignalOnboardingState(models.Model):
+    user = models.OneToOneField(
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name="signal_onboarding_state",
+    )
+    using_signal_seen = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username}: using_signal_seen={self.using_signal_seen}"
+
+
 DOT_IDENTIFIER_ADJECTIVES = (
     "calm",
     "bright",

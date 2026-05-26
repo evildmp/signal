@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from app.models import Dot
+from app.models import Dot, SignalOnboardingState
 
 
 ORANGE_RGB = "rgb(233, 84, 32)"
@@ -23,6 +23,17 @@ def saturation_for_css_rgb(css_rgb):
     red, green, blue = rgb_triplet(css_rgb)
     _, _, saturation = rgb_to_hls(red / 255, green / 255, blue / 255)
     return saturation
+
+
+@pytest.fixture(autouse=True)
+def dismiss_onboarding_by_default(request, jerry_with_explicit_teams):
+    if request.node.name.startswith("test_using_signal_modal_shows_once_and_stays_dismissed"):
+        return
+
+    SignalOnboardingState.objects.update_or_create(
+        user=jerry_with_explicit_teams,
+        defaults={"using_signal_seen": True},
+    )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -65,6 +76,26 @@ def test_selecting_a_team_clears_my_dots_only(page, login_jerry):
 
     expect(blue).to_be_checked()
     expect(my_dots_only).not_to_be_checked()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_using_signal_modal_shows_once_and_stays_dismissed(page, login_jerry):
+    login_jerry(page)
+
+    dialog = page.locator("dialog#signal-onboarding-dialog")
+    expect(dialog).to_be_visible()
+    expect(dialog.get_by_role("heading", name="Using Signal")).to_be_visible()
+
+    dialog.get_by_role("button", name="Continue").click()
+    expect(dialog).not_to_be_visible()
+
+    page.reload()
+    reloaded_dialog = page.locator("dialog#signal-onboarding-dialog")
+    expect(reloaded_dialog).to_have_count(1)
+    expect(reloaded_dialog).not_to_be_visible()
+
+    page.locator("#signal-onboarding-open").click()
+    expect(reloaded_dialog).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)

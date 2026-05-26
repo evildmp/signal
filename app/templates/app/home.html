@@ -104,7 +104,44 @@
             <h1 class="p-panel__title">Signal</h1>
           </div>
           <div class="p-panel__content">
-            <p class="p-text--small">Place a dot; select to edit; drag to move</p>
+            <p class="p-text--small">
+              Place a dot; select to edit; drag to move.
+              <a href="#" id="signal-onboarding-open">Using Signal</a>
+            </p>
+            <dialog
+              id="signal-onboarding-dialog"
+              aria-label="Using Signal"
+              data-dismiss-url="{% url 'dismiss_signal_onboarding' %}"
+              data-show-on-load="{% if show_signal_onboarding %}1{% else %}0{% endif %}"
+            >
+              <article class="p-card">
+                <h2 class="p-heading--4">Using Signal</h2>
+                <p>
+                  Signal allows you to record and share how you feel, using a grid: from
+                  <em>feeling bad</em> to <em>feeling good</em> on one axis, and from
+                  <em>settled</em> to <em>aroused</em> on the other.
+                </p>
+                <p>
+                  Place a dot by selecting a position on the grid; select a dot to edit it; drag to move a dot.
+                </p>
+                <h3 class="p-heading--5">Anonymity first</h3>
+                <p>
+                  Signal guarantees anonymity, unless you choose to share your identity. By default, no dot you place on the grid can be traced back to you (not even with complete access to the database).
+                </p>
+                <p>
+                  When you create a dot, Signal gives your browser its unique <em>ownership token</em>. As long as your browser holds this token, you can edit and move your dot.
+                </p>
+                <p>
+                  Optionally, you can choose to <em>show your name</em> with a particular dot. This creates a database relationship between you and the dot, which is also another way that the system can verify your ownership of it. As soon as you deselect the <em>show my name</em> option, that relationship is deleted.
+                </p>
+                <p>
+                  When you first create a dot, Signal displays a <em>claim token</em> in the form <em>bright red star</em>. Knowing an unclaimed dot's claim token allows you to claim it as your own - useful if you created a dot using one device and want to manage it on another.
+                </p>
+                <div class="u-align--right">
+                  <button type="button" class="p-button--positive" id="signal-onboarding-continue">Continue</button>
+                </div>
+              </article>
+            </dialog>
             <section
               class="p-card signal-grid"
               aria-label="Signal grid"
@@ -151,6 +188,9 @@
         var menuToggle = document.getElementById('menu-toggle');
         var menuClose = document.getElementById('menu-close');
         var menuPin = document.getElementById('menu-pin');
+        var onboardingDialog = document.getElementById('signal-onboarding-dialog');
+        var onboardingContinue = document.getElementById('signal-onboarding-continue');
+        var onboardingOpen = document.getElementById('signal-onboarding-open');
 
         if (menuToggle) {
           menuToggle.addEventListener('click', function () {
@@ -167,6 +207,34 @@
         if (menuPin) {
           menuPin.addEventListener('click', function () {
             nav.classList.toggle('is-pinned');
+          });
+        }
+
+        if (onboardingDialog && onboardingDialog.dataset.showOnLoad === '1' && !onboardingDialog.open) {
+          onboardingDialog.showModal();
+        }
+
+        if (onboardingDialog && onboardingOpen) {
+          onboardingOpen.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!onboardingDialog.open) {
+              onboardingDialog.showModal();
+            }
+          });
+        }
+
+        if (onboardingDialog && onboardingContinue) {
+          onboardingContinue.addEventListener('click', function () {
+            var dismissUrl = onboardingDialog.dataset.dismissUrl;
+            if (dismissUrl) {
+              htmx.ajax('POST', dismissUrl, {
+                swap: 'none',
+                headers: {
+                  'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                }
+              });
+            }
+            onboardingDialog.close();
           });
         }
 
