@@ -27,3 +27,5 @@ This plan exists to keep an LLM agent on track.
 12. [x] Add an initial help screen that shows the first a user encounters the application; a "Using Signal" button or link appears in case the user needs to see it again.
 
 13. [ ] Add Team admin membership editing: in Team admin, allow adding/removing user memberships for the selected team; do the same for User admin; create tests for both.
+
+14. [ ] Add a dot-flagging and review mechanism.
