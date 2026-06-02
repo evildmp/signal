@@ -74,6 +74,7 @@
       <p class="p-notification--negative">{{ form.errors }}</p>
     {% endif %}
     <div class="dot-editor-actions">
+      <button type="button" class="p-button--base dialog-cancel" onclick="this.closest('dialog').close()">Cancel</button>
       <button
         type="button"
         class="p-button--negative dot-editor-actions-delete"
@@ -82,7 +83,6 @@
         hx-target="#dot-editor-host"
         hx-swap="innerHTML"
       >Delete</button>
-      <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
       <button type="submit" class="p-button--positive">Save</button>
     </div>
   </form>

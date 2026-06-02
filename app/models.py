@@ -216,6 +216,19 @@ class Dot(models.Model):
     action_sentiment = models.JSONField(default=list, blank=True)
     feeling_free_text = models.TextField(blank=True, default="")
     action_sentiment_free_text = models.TextField(blank=True, default="")
+    flagged_by = models.ForeignKey(
+        get_user_model(),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="flagged_dots",
+    )
+    flagged_at = models.DateTimeField(null=True, blank=True)
+    flag_reason = models.TextField(blank=True, default="")
+
+    @property
+    def is_flagged(self):
+        return self.flagged_by_id is not None
 
     def clean(self):
         super().clean()

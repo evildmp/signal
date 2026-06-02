@@ -7,19 +7,32 @@
     hx-swap="innerHTML"
   >
     {% csrf_token %}
-    <h2 class="p-heading--5">Claim dot</h2>
-    <p class="p-text--small">Enter the claim token for this dot to continue.</p>
+    <h2 class="p-heading--5">Claim or flag for review</h2>
 
-    <label for="dot-claim-token" class="u-sv1">Claim token</label>
-    <input id="dot-claim-token" name="claim_token" type="text" required autofocus>
+    {% if can_claim %}
+      <div class="dot-claim-row">
+        <input id="dot-claim-token" name="claim_token" type="text" placeholder="adjective-colour-noun" aria-label="Claim token" required autofocus>
+        <button type="submit" class="p-button--positive">Claim</button>
+      </div>
+    {% else %}
+      <p class="p-text--small">This dot cannot be claimed.</p>
+    {% endif %}
 
     {% if claim_error %}
       <p class="p-notification--negative">{{ claim_error }}</p>
     {% endif %}
 
+    <hr class="dot-claim-divider">
+
     <div class="dot-editor-actions">
-      <button type="button" class="p-button--base" onclick="this.closest('dialog').close()">Cancel</button>
-      <button type="submit" class="p-button--positive">Claim</button>
+      <button type="button" class="p-button--base dialog-cancel" onclick="this.closest('dialog').close()">Cancel</button>
+      <button
+        type="button"
+        class="p-button--negative"
+        hx-get="{% url 'dot_flag_confirm' dot.id %}"
+        hx-target="#dot-editor-host"
+        hx-swap="innerHTML"
+      >Flag for review</button>
     </div>
   </form>
 </dialog>

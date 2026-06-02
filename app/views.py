@@ -8,7 +8,6 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.db import transaction
 from django.db.models import Q
 
-import hashlib
 import json
 from datetime import timedelta
 from uuid import UUID
@@ -26,6 +25,14 @@ DOT_MIN_VISIBLE_OPACITY = 0.35
 def user_can_manage_dot(request, dot, ownership_token=None):
     token = ownership_token or ""
     return dot.owner_user_id == request.user.id or str(dot.ownership_token) == token
+
+
+def dot_is_locked(dot):
+    return dot.flagged_by_id is not None
+
+
+def user_can_unflag_dot(request, dot):
+    return request.user.is_staff or dot.flagged_by_id == request.user.id
 
 
 def request_ownership_token(request):
@@ -65,6 +72,14 @@ def dot_is_claimable(dot):
     return dot.owner_user_id is None
 
 
+def user_can_see_dot(request, dot):
+    visible_team_ids = Team.objects.visible_for_user(
+        request.user,
+        include_implicit=True,
+    ).values_list("id", flat=True)
+    return dot.teams.filter(id__in=visible_team_ids).exists()
+
+
 def build_dot_label_position_class_from_coordinates(x, y):
     label_y = "below" if y > LABEL_TOP_EDGE_THRESHOLD else "above"
     if x < LABEL_LEFT_EDGE_THRESHOLD:
@@ -84,21 +99,18 @@ def build_dot_label_position_class(dot):
     return build_dot_label_position_class_from_coordinates(dot.x, dot.y)
 
 
-def build_dot_colour_key(request, dot):
-    if dot.owner_user_id and dot.owner_user_id != request.user.id:
-        return f"owner:{dot.owner_user_id}"
-    return f"dot:{dot.id}:{dot.claim_token}"
-
-
 def build_dot_unclaimed_colour(request, dot):
-    digest = hashlib.sha256(build_dot_colour_key(request, dot).encode("utf-8")).digest()
-    hue = digest[0] % 360
+    x_ratio = max(0.0, min(1.0, dot.x / 100.0))
+    y_ratio = max(0.0, min(1.0, dot.y / 100.0))
 
-    # Keep generated colours away from the claimed orange range.
-    if 12 <= hue <= 42:
-        hue = (hue + 90) % 360
+    # Vertical axis: greener below, bluer above.
+    hue = 120 + (100 * y_ratio)
+    # Vertical axis (low -> high energy): muted to vivid.
+    saturation = 40 + (45 * y_ratio)
+    # Horizontal axis also controls lightness: darker on the left, lighter on the right.
+    lightness = 30 + (30 * x_ratio)
 
-    return f"hsl({hue}, 78%, 48%)"
+    return f"hsl({hue:.1f}, {saturation:.1f}%, {lightness:.1f}%)"
 
 
 def build_dot_age_opacity(dot, now):
@@ -139,6 +151,13 @@ def _dedupe_label_values(values):
 
 
 def build_published_label_groups(dot):
+    if dot.flagged_by_id:
+        return {
+            "username": "Flagged for review",
+            "feelings": "",
+            "actions": "",
+        }
+
     feeling_values = _dedupe_label_values(
         list(dot.feeling) + _split_label_values(dot.feeling_free_text)
     )
@@ -203,6 +222,16 @@ def build_dot_editor_context(request, dot):
         "selected_team_ids": selected_team_ids,
         "team_field_name": form["team_ids"].html_name,
         "team_choices": team_choices,
+    }
+
+
+def build_dot_updated_payload(request, dot):
+    return {
+        "dotId": dot.id,
+        "ownedByUser": user_can_manage_dot(request, dot, request_ownership_token(request)),
+        "labelParts": build_published_label_parts(dot),
+        "labelGroups": build_published_label_groups(dot),
+        "labelClass": build_dot_label_position_class(dot),
     }
 
 
@@ -378,6 +407,9 @@ def create_dot(request):
 def move_dot(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
 
+    if dot_is_locked(dot):
+        return HttpResponse(status=403)
+
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
@@ -403,6 +435,9 @@ def move_dot(request, dot_id):
 def delete_dot(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
 
+    if dot_is_locked(dot):
+        return HttpResponse(status=403)
+
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
         return HttpResponse(status=403)
@@ -418,13 +453,37 @@ def delete_dot(request, dot_id):
 @require_http_methods(["GET", "POST"])
 def dot_edit(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
+
+    if dot_is_locked(dot):
+        if request.method == "POST":
+            return HttpResponse(status=403)
+        return render(
+            request,
+            "app/_dot_flagged.html",
+            {
+                "dot": dot,
+                "can_unflag": user_can_unflag_dot(request, dot),
+            },
+        )
+
     if request.method == "GET" and "ownership_token" in request.GET:
         return HttpResponse(status=403)
 
     ownership_token = request_ownership_token(request)
     if not user_can_manage_dot(request, dot, ownership_token):
-        if request.method == "GET" and dot_is_claimable(dot):
-            return render(request, "app/_dot_claim.html", {"dot": dot})
+        if not user_can_see_dot(request, dot):
+            return HttpResponse(status=403)
+        if request.method == "GET":
+            if not dot_is_claimable(dot):
+                return render(request, "app/_dot_flag_confirm.html", {"dot": dot})
+            return render(
+                request,
+                "app/_dot_claim.html",
+                {
+                    "dot": dot,
+                    "can_claim": dot_is_claimable(dot),
+                },
+            )
         return HttpResponse(status=403)
 
     editor_context = build_dot_editor_context(request, dot)
@@ -509,6 +568,9 @@ def dot_edit(request, dot_id):
 @require_POST
 def dot_claim(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
+    if dot_is_locked(dot):
+        return HttpResponse(status=403)
+
     if not dot_is_claimable(dot):
         return HttpResponse(status=403)
 
@@ -521,4 +583,71 @@ def dot_claim(request, dot_id):
     response["HX-Trigger"] = json.dumps(
         {"dotClaimed": {"dotId": dot.id, "token": str(dot.ownership_token)}}
     )
+    return response
+
+
+@login_required
+@require_http_methods(["GET"])
+def dot_flag_confirm(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
+    if not user_can_manage_dot(request, dot, request_ownership_token(request)) and not user_can_see_dot(request, dot):
+        return HttpResponse(status=403)
+
+    if dot_is_locked(dot):
+        return render(
+            request,
+            "app/_dot_flagged.html",
+            {
+                "dot": dot,
+                "can_unflag": user_can_unflag_dot(request, dot),
+            },
+        )
+
+    return render(request, "app/_dot_flag_confirm.html", {"dot": dot})
+
+
+@login_required
+@require_POST
+def dot_flag(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
+    if not user_can_manage_dot(request, dot, request_ownership_token(request)) and not user_can_see_dot(request, dot):
+        return HttpResponse(status=403)
+
+    if dot_is_locked(dot):
+        return HttpResponse(status=403)
+
+    dot.flagged_by = request.user
+    dot.flagged_at = timezone.now()
+    dot.flag_reason = request.POST.get("reason", "").strip()
+    dot.save(update_fields=["flagged_by", "flagged_at", "flag_reason"])
+
+    response = render(
+        request,
+        "app/_dot_flagged.html",
+        {
+            "dot": dot,
+            "can_unflag": user_can_unflag_dot(request, dot),
+        },
+    )
+    response["HX-Trigger"] = json.dumps({"dotUpdated": build_dot_updated_payload(request, dot)})
+    return response
+
+
+@login_required
+@require_POST
+def dot_unflag(request, dot_id):
+    dot = get_object_or_404(Dot, id=dot_id)
+    if not dot_is_locked(dot):
+        return HttpResponse(status=403)
+
+    if not user_can_unflag_dot(request, dot):
+        return HttpResponse(status=403)
+
+    dot.flagged_by = None
+    dot.flagged_at = None
+    dot.flag_reason = ""
+    dot.save(update_fields=["flagged_by", "flagged_at", "flag_reason"])
+
+    response = HttpResponse("")
+    response["HX-Trigger"] = json.dumps({"dotUpdated": build_dot_updated_payload(request, dot)})
     return response
