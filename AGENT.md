@@ -120,7 +120,7 @@ For development and testing purposes, every user needs to have created 4 to 12 d
 
 When created, a dot has a "claim token". This is the mechanism by which the interface knows that a dot belongs to a user. The user receives the clain token and that allows the browser to tell the application it is authorised to make future changes to a dot.
 
-Any user should be able to flag any dot, whether they own it or not, by clicking on it. In the dialog that opens, "Flag this dot appears". That opens a new dialog: "Flagging this dot will hide it all information associated with it (except its position) immediately. Until it has been reviewed by an administrator, it will display "Flagged by <your username>".
+Any user should be able to flag any dot, whether they own it or not, by clicking on it. In the dialog that opens, "Flag this dot appears". That opens a new dialog: "Flagging this dot will hide it all information associated with it (except its position) immediately. Until it has been reviewed by an administrator, it will display "Flagged for review".
 
 In the admin, an administrator can see all available information associated with a flagged dot, and has the option to unflag it or delete it.
 
