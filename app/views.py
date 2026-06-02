@@ -228,7 +228,9 @@ def build_dot_editor_context(request, dot):
 def build_dot_updated_payload(request, dot):
     return {
         "dotId": dot.id,
-        "ownedByUser": user_can_manage_dot(request, dot, request_ownership_token(request)),
+        "ownedByUser": user_can_manage_dot(
+            request, dot, request_ownership_token(request)
+        ),
         "labelParts": build_published_label_parts(dot),
         "labelGroups": build_published_label_groups(dot),
         "labelClass": build_dot_label_position_class(dot),
@@ -501,7 +503,9 @@ def dot_edit(request, dot_id):
             with transaction.atomic():
                 dot.teams.set(Team.objects.filter(id__in=selected_team_ids))
                 dot.owner_user = (
-                    request.user if form.cleaned_data.get("include_name", False) else None
+                    request.user
+                    if form.cleaned_data.get("include_name", False)
+                    else None
                 )
                 dot.feeling = form.cleaned_data.get("feeling", [])
                 dot.feeling_free_text = form.cleaned_data.get("feeling_free_text", "")
@@ -590,7 +594,9 @@ def dot_claim(request, dot_id):
 @require_http_methods(["GET"])
 def dot_flag_confirm(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
-    if not user_can_manage_dot(request, dot, request_ownership_token(request)) and not user_can_see_dot(request, dot):
+    if not user_can_manage_dot(
+        request, dot, request_ownership_token(request)
+    ) and not user_can_see_dot(request, dot):
         return HttpResponse(status=403)
 
     if dot_is_locked(dot):
@@ -610,7 +616,9 @@ def dot_flag_confirm(request, dot_id):
 @require_POST
 def dot_flag(request, dot_id):
     dot = get_object_or_404(Dot, id=dot_id)
-    if not user_can_manage_dot(request, dot, request_ownership_token(request)) and not user_can_see_dot(request, dot):
+    if not user_can_manage_dot(
+        request, dot, request_ownership_token(request)
+    ) and not user_can_see_dot(request, dot):
         return HttpResponse(status=403)
 
     if dot_is_locked(dot):
@@ -629,7 +637,9 @@ def dot_flag(request, dot_id):
             "can_unflag": user_can_unflag_dot(request, dot),
         },
     )
-    response["HX-Trigger"] = json.dumps({"dotUpdated": build_dot_updated_payload(request, dot)})
+    response["HX-Trigger"] = json.dumps(
+        {"dotUpdated": build_dot_updated_payload(request, dot)}
+    )
     return response
 
 
@@ -649,5 +659,7 @@ def dot_unflag(request, dot_id):
     dot.save(update_fields=["flagged_by", "flagged_at", "flag_reason"])
 
     response = HttpResponse("")
-    response["HX-Trigger"] = json.dumps({"dotUpdated": build_dot_updated_payload(request, dot)})
+    response["HX-Trigger"] = json.dumps(
+        {"dotUpdated": build_dot_updated_payload(request, dot)}
+    )
     return response

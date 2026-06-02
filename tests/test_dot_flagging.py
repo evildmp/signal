@@ -6,7 +6,9 @@ from app.models import Dot, Team
 
 
 @pytest.mark.django_db
-def test_unowned_dot_dialog_includes_flag_action(client, jerry_with_explicit_teams, minimum_team_hierarchy):
+def test_unowned_dot_dialog_includes_flag_action(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
     client.force_login(jerry_with_explicit_teams)
 
     dot = Dot.objects.create(x=42, y=61)
@@ -128,10 +130,14 @@ def test_flagged_dot_is_locked_for_all_mutations(
     client.force_login(jerry_with_explicit_teams)
     assert client.post(f"/dot/{dot.id}/flag/", {"reason": "review"}).status_code == 200
 
-    edit_response = client.post(f"/dot/{dot.id}/edit/", {"team_ids": [str(minimum_team_hierarchy["blue"].id)]})
+    edit_response = client.post(
+        f"/dot/{dot.id}/edit/", {"team_ids": [str(minimum_team_hierarchy["blue"].id)]}
+    )
     move_response = client.post(f"/dot/{dot.id}/move/", {"x": "22", "y": "30"})
     delete_response = client.post(f"/dot/{dot.id}/delete/")
-    claim_response = client.post(f"/dot/{dot.id}/claim/", {"claim_token": dot.claim_token})
+    claim_response = client.post(
+        f"/dot/{dot.id}/claim/", {"claim_token": dot.claim_token}
+    )
 
     assert edit_response.status_code == 403
     assert move_response.status_code == 403
@@ -180,7 +186,9 @@ def test_only_flagger_or_admin_can_unflag_dot(
     client.force_login(jerry_with_explicit_teams)
     assert client.post(f"/dot/{dot.id}/flag/", {"reason": "again"}).status_code == 200
 
-    admin_unflag_response = admin_client.post(reverse("admin:app_dot_unflag", args=[dot.id]))
+    admin_unflag_response = admin_client.post(
+        reverse("admin:app_dot_unflag", args=[dot.id])
+    )
     assert admin_unflag_response.status_code in (200, 302)
 
 

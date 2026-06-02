@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from app.models import Dot, SignalOnboardingState
 
-
 ORANGE_RGB = "rgb(233, 84, 32)"
 
 
@@ -27,7 +26,9 @@ def saturation_for_css_rgb(css_rgb):
 
 @pytest.fixture(autouse=True)
 def dismiss_onboarding_by_default(request, jerry_with_explicit_teams):
-    if request.node.name.startswith("test_using_signal_modal_shows_once_and_stays_dismissed"):
+    if request.node.name.startswith(
+        "test_using_signal_modal_shows_once_and_stays_dismissed"
+    ):
         return
 
     SignalOnboardingState.objects.update_or_create(

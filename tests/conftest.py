@@ -5,7 +5,6 @@ from django.contrib.auth import get_user_model
 
 from app.models import Team, TeamMembership
 
-
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 
@@ -54,6 +53,7 @@ def login_jerry(live_server, jerry_with_explicit_teams):
             pass
 
     return _login
+
 
 @pytest.fixture
 def authenticated_page(page, login_jerry):

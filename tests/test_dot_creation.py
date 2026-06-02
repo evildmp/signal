@@ -225,7 +225,9 @@ def test_clicking_grid_places_a_dot_and_shows_notification(
         bounding_box["y"] + bounding_box["height"] * 0.1,
     )
 
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
 
     label = authenticated_page.locator(".signal-dot-label")
     expect(label).to_be_visible()
@@ -247,7 +249,9 @@ def test_create_notification_stays_visible_until_next_grid_interaction(
     bb = grid.bounding_box()
 
     # First grid interaction creates the dot and shows the notification label.
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.2, bb["y"] + bb["height"] * 0.2)
+    authenticated_page.mouse.click(
+        bb["x"] + bb["width"] * 0.2, bb["y"] + bb["height"] * 0.2
+    )
     first_label = authenticated_page.locator(".signal-dot-label").last
     expect(first_label).to_be_visible()
 
@@ -256,7 +260,9 @@ def test_create_notification_stays_visible_until_next_grid_interaction(
     expect(first_label).to_be_visible()
 
     # Next grid interaction should dismiss the previous notification and show a fresh one.
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.8, bb["y"] + bb["height"] * 0.8)
+    authenticated_page.mouse.click(
+        bb["x"] + bb["width"] * 0.8, bb["y"] + bb["height"] * 0.8
+    )
     expect(authenticated_page.locator(".signal-dot-label")).to_have_count(1)
     second_label = authenticated_page.locator(".signal-dot-label").last
     expect(second_label).to_be_visible()
@@ -270,8 +276,12 @@ def test_create_notification_includes_claim_token(authenticated_page):
 
     initial_dot_count = authenticated_page.locator(".signal-dot").count()
     bb = grid.bounding_box()
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.35, bb["y"] + bb["height"] * 0.35)
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+    authenticated_page.mouse.click(
+        bb["x"] + bb["width"] * 0.35, bb["y"] + bb["height"] * 0.35
+    )
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
 
     new_dot = authenticated_page.locator(".signal-dot").last
     dot_id = int(new_dot.get_attribute("data-dot-id"))
@@ -288,7 +298,9 @@ def test_create_notification_renders_lines_and_bold_values(authenticated_page):
     expect(grid).to_be_visible()
 
     bb = grid.bounding_box()
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.3, bb["y"] + bb["height"] * 0.3)
+    authenticated_page.mouse.click(
+        bb["x"] + bb["width"] * 0.3, bb["y"] + bb["height"] * 0.3
+    )
 
     label = authenticated_page.locator(".signal-dot-label").last
     expect(label).to_be_visible()
@@ -320,7 +332,9 @@ def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
         bounding_box["y"] + bounding_box["height"] * 0.6,
     )
 
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
 
     new_dot = authenticated_page.locator(".signal-dot").last
     expect(new_dot).to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
@@ -336,7 +350,9 @@ def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
 def test_label_positions_near_edges(authenticated_page):
     """Labels near grid edges should flip position to stay visible."""
 
-    onboarding_dialog = authenticated_page.locator("dialog#signal-onboarding-dialog[open]")
+    onboarding_dialog = authenticated_page.locator(
+        "dialog#signal-onboarding-dialog[open]"
+    )
     if onboarding_dialog.count() > 0:
         authenticated_page.locator("#signal-onboarding-continue").click()
 
@@ -347,7 +363,9 @@ def test_label_positions_near_edges(authenticated_page):
 
     # Click near bottom-right -> label should be to the left of the dot
     grid.click(position={"x": bb["width"] * 0.9, "y": bb["height"] * 0.9})
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
 
     label = authenticated_page.locator(".signal-dot-label").last
     expect(label).to_be_visible()
@@ -402,7 +420,9 @@ def test_dot_created_near_corner_stays_fully_inside_grid(authenticated_page):
         bounding_box["y"] + 1,
     )
 
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
 
     dot = authenticated_page.locator(".signal-dot").last
     expect(dot).to_be_visible()
@@ -421,7 +441,9 @@ def test_dragging_dot_moves_it_without_creating_new_dot(
     authenticated_page, minimum_team_hierarchy
 ):
     # Create a dot via the browser so the ownership token is stored in localStorage.
-    onboarding_dialog = authenticated_page.locator("dialog#signal-onboarding-dialog[open]")
+    onboarding_dialog = authenticated_page.locator(
+        "dialog#signal-onboarding-dialog[open]"
+    )
     if onboarding_dialog.count() > 0:
         authenticated_page.locator("#signal-onboarding-continue").click()
 

@@ -84,7 +84,7 @@ def test_dismissing_using_signal_modal_hides_it_on_next_home_visit(
     content = response.content.decode()
     assert 'id="signal-onboarding-dialog"' in content
     assert 'data-show-on-load="0"' in content
-    assert '>Using Signal</a>' in content
+    assert ">Using Signal</a>" in content
 
 
 @pytest.mark.django_db
@@ -293,7 +293,9 @@ def test_main_view_claimed_class_uses_owner_relation_or_ownership_token(
     unowned_dot = Dot.objects.create(x=60, y=70)
     unowned_dot.teams.add(minimum_team_hierarchy["blue"])
 
-    response = client.get("/", {"ownership_token": str(token_owned_dot.ownership_token)})
+    response = client.get(
+        "/", {"ownership_token": str(token_owned_dot.ownership_token)}
+    )
 
     assert response.status_code == 200
     content = response.content.decode()

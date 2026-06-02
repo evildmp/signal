@@ -173,7 +173,7 @@ def test_home_template_loads_external_dot_editor_script(
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert '/static/app/dot_editor.js' in content
+    assert "/static/app/dot_editor.js" in content
 
 
 @pytest.mark.django_db

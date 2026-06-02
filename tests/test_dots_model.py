@@ -56,7 +56,9 @@ def test_dot_visibility_is_limited_to_last_week():
 
     visibility_cutoff = timezone.now() - timedelta(days=7)
     visible_dot_ids = set(
-        Dot.objects.filter(created_at__gte=visibility_cutoff).values_list("id", flat=True)
+        Dot.objects.filter(created_at__gte=visibility_cutoff).values_list(
+            "id", flat=True
+        )
     )
 
     assert recent_dot.id in visible_dot_ids

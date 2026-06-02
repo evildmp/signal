@@ -7,7 +7,6 @@ from django.db import transaction
 
 from app.models import Dot
 
-
 DEFAULT_FIXTURE_PATH = Path("app/fixtures/initial_data.json")
 
 
@@ -62,7 +61,9 @@ def refresh_database(fixture_path, updated_timestamps, skip_load):
         missing_ids = sorted(set(updated_timestamps) - set(dots))
         if missing_ids:
             missing_list = ", ".join(str(dot_id) for dot_id in missing_ids)
-            raise SystemExit(f"Missing app.dot rows in database for ids: {missing_list}")
+            raise SystemExit(
+                f"Missing app.dot rows in database for ids: {missing_list}"
+            )
 
         for dot_id, created_at in updated_timestamps.items():
             dot = dots[dot_id]
