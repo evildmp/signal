@@ -315,7 +315,7 @@ def test_dot_editor_post_rejects_multiple_action_sentiments(
         f"/dot/{dot.id}/edit/",
         {
             "team_ids": [str(minimum_team_hierarchy["deep_red"].id)],
-            "action_sentiment": ["I need help", "I would love to talk about this"],
+            "action_sentiment": ["I need help", "I'd love to talk about this"],
             "include_name": "on",
         },
     )

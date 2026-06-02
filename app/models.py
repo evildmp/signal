@@ -190,9 +190,9 @@ ACTION_SENTIMENTS = [
     "I need help",
     "I wish I could talk to someone",
     "I don't know how to talk about this",
-    "I would love to talk about this",
-    "I would like people to know",
-    "I would be really happy to share my news",
+    "I'd love to talk about this",
+    "I'd like people to know",
+    "I'd be really happy to share my news",
 ]
 
 
