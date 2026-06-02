@@ -39,15 +39,13 @@ Working with Signal
 Get started
 -----------
 
-Install the dependencies with `pip install -r requirements_dev.txt` (ideally in a clean Python virtual environment).
+Install the dependencies with ``pip install -r requirements_dev.txt`` (ideally in a clean Python virtual environment).
 
-Run the migrations with `python manage.py migrate`.
+Run the migrations with ``python manage.py migrate``.
 
-Seed initial development data with `python manage.py seed_initial_data`.
+Load the checked-in initial fixture data from `app/fixtures/initial_data.json``, then refresh dot timestamps into the last week with ``python manage.py load_initial_data``.
 
-Load the checked-in initial fixture data and refresh dot timestamps into the last week with `python manage.py load_initial_data`.
-
-Start the app with `python manage.py runserver`, (or `python manage.py runserver 0.0.0.0:8080` if you need a different local port).
+Start the app with ``python manage.py runserver``, (or ``python manage.py runserver 0.0.0.0:8080`` if you need a different local port).
 
 How to run tests
 ----------------
