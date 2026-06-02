@@ -29,3 +29,5 @@ This plan exists to keep an LLM agent on track.
 13. [ ] Add Team admin membership editing: in Team admin, allow adding/removing user memberships for the selected team; do the same for User admin; create tests for both.
 
 14. [ ] Add a dot-flagging and review mechanism.
+
+15. [ ] Prevent claimed dots from being claimed by another user.
