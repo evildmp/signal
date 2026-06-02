@@ -38,6 +38,7 @@ def test_clicking_unclaimed_dot_opens_claim_dialog(
     claim_dialog = page.locator("dialog#dot-claim-dialog")
     expect(claim_dialog).to_be_visible()
     expect(claim_dialog).to_have_attribute("open", "")
+    expect(claim_dialog).to_contain_text("Claim or flag for review")
     expect(claim_dialog.get_by_label("Claim token")).to_be_visible()
 
 
@@ -78,7 +79,10 @@ def test_clicking_dot_with_owner_relation_is_ignored(
     page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
 
     expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
-    expect(page.locator("dialog#dot-claim-dialog")).to_have_count(0)
+    flag_dialog = page.locator("dialog#dot-flag-confirm-dialog")
+    expect(flag_dialog).to_be_visible()
+    expect(flag_dialog.get_by_role("button", name="Cancel")).to_be_visible()
+    expect(flag_dialog.get_by_role("button", name="Flag")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -260,7 +264,7 @@ def test_deleting_owned_dot_removes_it_from_the_grid(
         "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
         [str(dot.id), str(dot.ownership_token)],
     )
-    page.reload()
+    page.reload(wait_until="domcontentloaded")
 
     dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
     expect(dot_locator).to_be_visible()
@@ -291,7 +295,7 @@ def test_saving_dot_updates_published_label_without_reload(
         "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
         [str(dot.id), str(dot.ownership_token)],
     )
-    page.reload()
+    page.reload(wait_until="domcontentloaded")
 
     dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
     dot_locator.click()
@@ -321,7 +325,7 @@ def test_saving_dot_shows_transient_published_notification(
         "([dotId, token]) => localStorage.setItem('dotTokens', JSON.stringify({[dotId]: token}))",
         [str(dot.id), str(dot.ownership_token)],
     )
-    page.reload()
+    page.reload(wait_until="domcontentloaded")
 
     page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
     dialog = page.locator("dialog#dot-editor-dialog")

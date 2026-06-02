@@ -46,6 +46,13 @@ def login_jerry(live_server, jerry_with_explicit_teams):
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
 
+        try:
+            page.locator(
+                "dialog#signal-onboarding-dialog[open] #signal-onboarding-continue"
+            ).click(timeout=3000)
+        except Exception:
+            pass
+
     return _login
 
 @pytest.fixture

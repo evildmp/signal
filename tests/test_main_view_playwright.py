@@ -79,8 +79,13 @@ def test_selecting_a_team_clears_my_dots_only(page, login_jerry):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_using_signal_modal_shows_once_and_stays_dismissed(page, login_jerry):
-    login_jerry(page)
+def test_using_signal_modal_shows_once_and_stays_dismissed(
+    page, live_server, jerry_with_explicit_teams
+):
+    page.goto(f"{live_server.url}/login/")
+    page.locator('input[name="username"]').fill("jerry")
+    page.locator('input[name="password"]').fill("jerry")
+    page.get_by_role("button", name="Log in").click()
 
     dialog = page.locator("dialog#signal-onboarding-dialog")
     expect(dialog).to_be_visible()
@@ -187,7 +192,7 @@ def test_logged_in_users_dots_are_orange_and_fade_with_age(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_dots_with_same_owner_relation_share_same_saturated_colour(
+def test_dot_colour_reflects_grid_position_not_owner_identity(
     page, login_jerry, minimum_team_hierarchy
 ):
     tina = get_user_model().objects.create_user(username="tina", password="tina")
@@ -214,9 +219,11 @@ def test_dots_with_same_owner_relation_share_same_saturated_colour(
         str(second_dot.id),
     )
 
-    assert first_colour == second_colour
+    assert first_colour != second_colour
     assert first_colour != ORANGE_RGB
-    assert saturation_for_css_rgb(first_colour) >= 0.6
+    assert second_colour != ORANGE_RGB
+    assert saturation_for_css_rgb(first_colour) >= 0.35
+    assert saturation_for_css_rgb(second_colour) >= 0.35
 
 
 @pytest.mark.django_db(transaction=True)

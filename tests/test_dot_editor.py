@@ -407,6 +407,7 @@ def test_dot_editor_endpoint_rejects_user_without_ownership(
     assert response.status_code == 200
     content = response.content.decode()
     assert 'id="dot-claim-dialog"' in content
+    assert "Claim or flag for review" in content
     assert 'name="claim_token"' in content
 
 

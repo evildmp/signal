@@ -336,12 +336,19 @@ def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
 def test_label_positions_near_edges(authenticated_page):
     """Labels near grid edges should flip position to stay visible."""
 
+    onboarding_dialog = authenticated_page.locator("dialog#signal-onboarding-dialog[open]")
+    if onboarding_dialog.count() > 0:
+        authenticated_page.locator("#signal-onboarding-continue").click()
+
     grid = authenticated_page.locator(".signal-grid")
     expect(grid).to_be_visible()
     bb = grid.bounding_box()
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
 
     # Click near bottom-right -> label should be to the left of the dot
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.95, bb["y"] + bb["height"] * 0.95)
+    grid.click(position={"x": bb["width"] * 0.9, "y": bb["height"] * 0.9})
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dot_count + 1)
+
     label = authenticated_page.locator(".signal-dot-label").last
     expect(label).to_be_visible()
     class_attr = label.get_attribute("class")
@@ -414,12 +421,18 @@ def test_dragging_dot_moves_it_without_creating_new_dot(
     authenticated_page, minimum_team_hierarchy
 ):
     # Create a dot via the browser so the ownership token is stored in localStorage.
-    grid = authenticated_page.locator(".signal-grid")
-    bb = grid.bounding_box()
-    authenticated_page.mouse.click(bb["x"] + bb["width"] * 0.25, bb["y"] + bb["height"] * 0.75)
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(1)
+    onboarding_dialog = authenticated_page.locator("dialog#signal-onboarding-dialog[open]")
+    if onboarding_dialog.count() > 0:
+        authenticated_page.locator("#signal-onboarding-continue").click()
 
-    dot_locator = authenticated_page.locator(".signal-dot").first
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+    initial_count = authenticated_page.locator(".signal-dot").count()
+    bb = grid.bounding_box()
+    grid.click(position={"x": bb["width"] * 0.25, "y": bb["height"] * 0.75})
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_count + 1)
+
+    dot_locator = authenticated_page.locator(".signal-dot").last
     dot_id = dot_locator.get_attribute("data-dot-id")
 
     authenticated_page.wait_for_function(
@@ -437,7 +450,7 @@ def test_dragging_dot_moves_it_without_creating_new_dot(
     assert token_before_refresh is not None
 
     authenticated_page.reload()
-    expect(authenticated_page.locator(".signal-dot")).to_have_count(1)
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_count + 1)
 
     initial_dots = authenticated_page.locator(".signal-dot").count()
 
