@@ -18,8 +18,8 @@ from app.models import Dot, Team, SignalOnboardingState
 LABEL_LEFT_EDGE_THRESHOLD = 20
 LABEL_RIGHT_EDGE_THRESHOLD = 80
 LABEL_TOP_EDGE_THRESHOLD = 80
-DOT_VISIBILITY_WINDOW = timedelta(days=7)
-DOT_MIN_VISIBLE_OPACITY = 0.35
+DOT_VISIBILITY_WINDOW = timedelta(days=14)
+DOT_MIN_VISIBLE_OPACITY = 0.20
 
 
 def user_can_manage_dot(request, dot, ownership_token=None):

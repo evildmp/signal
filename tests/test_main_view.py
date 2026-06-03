@@ -223,7 +223,7 @@ def test_main_view_shows_only_recent_dots_for_selected_teams(
     stale_dot = Dot.objects.create(x=30, y=40)
     stale_dot.teams.add(deep_red)
     Dot.objects.filter(id=stale_dot.id).update(
-        created_at=timezone.now() - timedelta(days=8)
+        created_at=timezone.now() - timedelta(days=15)
     )
 
     non_selected_dot = Dot.objects.create(x=50, y=60)
@@ -237,7 +237,7 @@ def test_main_view_shows_only_recent_dots_for_selected_teams(
 
 
 @pytest.mark.django_db
-def test_main_view_does_not_render_dot_older_than_a_week(
+def test_main_view_does_not_render_dot_older_than_two_weeks(
     client, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
     client.force_login(jerry_with_explicit_teams)
@@ -245,7 +245,7 @@ def test_main_view_does_not_render_dot_older_than_a_week(
     stale_dot = Dot.objects.create(x=30, y=40)
     stale_dot.teams.add(minimum_team_hierarchy["blue"])
     Dot.objects.filter(id=stale_dot.id).update(
-        created_at=timezone.now() - timedelta(days=8)
+        created_at=timezone.now() - timedelta(days=15)
     )
 
     response = client.get("/")
