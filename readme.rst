@@ -43,7 +43,7 @@ Install the dependencies with ``pip install -r requirements_dev.txt`` (ideally i
 
 Run the migrations with ``python manage.py migrate``.
 
-Load the checked-in initial fixture data from `app/fixtures/initial_data.json``, then refresh dot timestamps into the last week with ``python manage.py load_initial_data``.
+Seed initial development data with ``python manage.py seed_initial_data``.
 
 Start the app with ``python manage.py runserver``, (or ``python manage.py runserver 0.0.0.0:8080`` if you need a different local port).
 

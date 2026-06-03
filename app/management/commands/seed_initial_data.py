@@ -165,7 +165,7 @@ USER_MOOD_PLANS = {
         "hopeful",
         "anxious",
     ],
-    "ernie": ["custom:Pragmatic", "calm", "content", "quiet", "optimistic"],
+    "ernie": ["custom:cheerful", "calm", "content", "quiet", "optimistic"],
     "david_r": ["calm", "content"],
     "rik": ["excited", "sad", "optimistic", "melancholy", "energised"],
     "benjamin": ["happy", "sad", "hopeful", "anxious", "cheerful"],
