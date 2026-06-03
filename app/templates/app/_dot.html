@@ -1,3 +1,4 @@
+{% load tz %}
 <span
   class="signal-dot{% if dot.is_owned_by_user %} signal-dot--claimed{% endif %}"
   data-dot-id="{{ dot.id }}"
@@ -6,5 +7,5 @@
   hx-target="#dot-editor-host"
   hx-swap="innerHTML"
   style="{{ dot.display_style }}"
-  title="dot-{{ dot.id }}"
+  title="{{ dot.created_at|utc|date:'D d M, H:i' }}"
 ><span class="signal-dot-fill" aria-hidden="true"></span></span>

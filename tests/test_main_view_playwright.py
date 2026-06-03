@@ -80,6 +80,27 @@ def test_selecting_a_team_clears_my_dots_only(page, login_jerry):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_dot_title_is_formatted_in_utc(
+    page, login_jerry, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=25, y=55)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+    Dot.objects.filter(id=dot.id).update(
+        created_at=timezone.now().replace(hour=13, minute=17, second=0, microsecond=0)
+    )
+    dot.refresh_from_db()
+
+    login_jerry(page)
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    expected_title = dot.created_at.astimezone(timezone.utc).strftime("%a %d %b, %H:%M")
+
+    assert dot_locator.get_attribute("title") == expected_title
+
+
+@pytest.mark.django_db(transaction=True)
 def test_using_signal_modal_shows_once_and_stays_dismissed(
     page, live_server, jerry_with_explicit_teams
 ):
@@ -105,7 +126,7 @@ def test_using_signal_modal_shows_once_and_stays_dismissed(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_older_visible_dot_renders_more_faded_than_newer_dot(
+def test_older_visible_dot_renders_same_opacity_as_newer_dot(
     page, login_jerry, minimum_team_hierarchy
 ):
     recent_dot = Dot.objects.create(x=25, y=55)
@@ -140,11 +161,11 @@ def test_older_visible_dot_renders_more_faded_than_newer_dot(
         )
     )
 
-    assert older_opacity < recent_opacity
+    assert older_opacity == recent_opacity
 
 
 @pytest.mark.django_db(transaction=True)
-def test_logged_in_users_dots_are_orange_and_fade_with_age(
+def test_logged_in_users_dots_are_orange_regardless_of_age(
     page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
     recent_dot = Dot.objects.create(x=25, y=55, owner_user=jerry_with_explicit_teams)
@@ -174,22 +195,8 @@ def test_logged_in_users_dots_are_orange_and_fade_with_age(
         "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).backgroundColor",
         str(older_dot.id),
     )
-    recent_opacity = float(
-        page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
-            str(recent_dot.id),
-        )
-    )
-    older_opacity = float(
-        page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
-            str(older_dot.id),
-        )
-    )
-
     assert recent_colour == ORANGE_RGB
     assert older_colour == ORANGE_RGB
-    assert older_opacity < recent_opacity
 
 
 @pytest.mark.django_db(transaction=True)
@@ -288,7 +295,7 @@ def test_logged_in_users_aged_dot_stays_more_visible_than_other_aged_dots(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_logged_in_users_dot_is_same_size_circle_with_orange_border_and_pulse(
+def test_logged_in_users_dot_is_same_size_circle_with_orange_border(
     page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
 ):
     owned_dot = Dot.objects.create(x=30, y=50, owner_user=jerry_with_explicit_teams)
@@ -326,10 +333,6 @@ def test_logged_in_users_dot_is_same_size_circle_with_orange_border_and_pulse(
             str(owned_dot.id),
         )
     )
-    owned_after_animation = page.evaluate(
-        "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]'), '::after').animationName",
-        str(owned_dot.id),
-    )
     other_border_radius = page.evaluate(
         "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')).borderRadius",
         str(other_dot.id),
@@ -339,5 +342,4 @@ def test_logged_in_users_dot_is_same_size_circle_with_orange_border_and_pulse(
     assert owned_border_color == "rgb(17, 17, 17)"
     assert owned_border_width >= 1
     assert owned_border_width < 2
-    assert owned_after_animation == "signal-dot-claimed-pulse"
     assert other_border_radius == "999px"

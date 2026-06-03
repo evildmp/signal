@@ -19,7 +19,6 @@ LABEL_LEFT_EDGE_THRESHOLD = 20
 LABEL_RIGHT_EDGE_THRESHOLD = 80
 LABEL_TOP_EDGE_THRESHOLD = 80
 DOT_VISIBILITY_WINDOW = timedelta(days=14)
-DOT_MIN_VISIBLE_OPACITY = 0.20
 
 
 def user_can_manage_dot(request, dot, ownership_token=None):
@@ -113,17 +112,10 @@ def build_dot_unclaimed_colour(request, dot):
     return f"hsl({hue:.1f}, {saturation:.1f}%, {lightness:.1f}%)"
 
 
-def build_dot_age_opacity(dot, now):
-    age_ratio = (now - dot.created_at) / DOT_VISIBILITY_WINDOW
-    clamped_ratio = max(0.0, min(1.0, age_ratio))
-    return 1.0 - ((1.0 - DOT_MIN_VISIBLE_OPACITY) * clamped_ratio)
-
-
-def build_dot_style(request, dot, now):
+def build_dot_style(request, dot):
     return (
         f"--dot-x: {dot.x}; --dot-y: {dot.y}; "
-        f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)}; "
-        f"--dot-age-opacity: {build_dot_age_opacity(dot, now):.3f};"
+        f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)};"
     )
 
 
@@ -325,7 +317,7 @@ def home(request):
         dot.published_label_groups = build_published_label_groups(dot)
         dot.published_label_parts = build_published_label_parts(dot)
         dot.published_label_class = build_dot_label_position_class(dot)
-        dot.display_style = build_dot_style(request, dot, now)
+        dot.display_style = build_dot_style(request, dot)
 
     onboarding_state = getattr(request.user, "signal_onboarding_state", None)
     show_signal_onboarding = not (
@@ -384,7 +376,7 @@ def create_dot(request):
     now = timezone.now()
     dot.is_owned_by_user = True
     dot.published_label_class = build_dot_label_position_class(dot)
-    dot.display_style = build_dot_style(request, dot, now)
+    dot.display_style = build_dot_style(request, dot)
     dot_html = render_to_string(
         "app/_dot.html",
         {"dot": dot},

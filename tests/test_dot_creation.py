@@ -89,6 +89,7 @@ def test_create_dot_response_includes_home_dot_attributes(
     # Keep inline create-dot output aligned with home-view dot wiring.
     assert f'data-dot-id="{dot.id}"' in content
     assert 'class="signal-dot' in content
+    assert 'title="' in content
     assert 'data-owned-by-user="1"' in content
     assert f'hx-get="/dot/{dot.id}/edit/"' in content
 

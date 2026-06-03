@@ -135,7 +135,6 @@
   cursor: pointer;
   z-index: 2;
   box-shadow: none;
-  transition: box-shadow 0.18s;
 }
 
 .signal-dot-fill {
@@ -143,7 +142,6 @@
   inset: 0;
   border-radius: 999px;
   background: var(--dot-display-color, var(--dot-unclaimed-color, #0e8420));
-  opacity: var(--dot-age-opacity, 1);
 }
 
 .signal-dot--claimed {
@@ -163,38 +161,13 @@
   box-shadow: 0 0 0 2px rgba(233,84,32,0.22);
   z-index: 1;
   pointer-events: none;
-  animation: signal-dot-claimed-pulse 2.2s cubic-bezier(0.4,0,0.2,1) infinite;
 }
 
 .signal-dot--claimed:active::after,
 .signal-dot--claimed.is-dragging::after,
 .signal-dot--claimed:hover::after {
-  animation-play-state: paused;
   background: rgba(233, 84, 32, 0.52);
   box-shadow: 0 0 0 2px rgba(233,84,32,0.28);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .signal-dot--claimed::after {
-    animation: none !important;
-    background: rgba(233, 84, 32, 0.42);
-    box-shadow: 0 0 0 2px rgba(233,84,32,0.28);
-  }
-}
-
-@keyframes signal-dot-claimed-pulse {
-  0% {
-    opacity: 0.32;
-    transform: scale(1);
-  }
-  60% {
-    opacity: 0.62;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 0.32;
-    transform: scale(1);
-  }
 }
 
 .signal-dot::before {
@@ -298,21 +271,6 @@
   white-space: nowrap;
 }
 
-@keyframes signal-dot-label-fade {
-  0% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
 #dot-editor-dialog {
   width: min(30rem, calc(100vw - 2rem));
   border: 1px solid #cdcdcd;
@@ -393,7 +351,7 @@
   flex: 1;
   min-width: 0;
   padding: 0.08rem 0;
-  background: transparent !important;
+  background: transparent;
   border: 0;
   border-bottom: 1px solid #cdcdcd;
 }
@@ -408,27 +366,25 @@
 .dot-editor-chip {
   margin: 0;
   border-radius: 0.45rem;
-  border: 0 !important;
-  box-shadow: none !important;
+  border: 0;
+  box-shadow: none;
   font-size: 0.85rem;
   line-height: 1.2;
   vertical-align: baseline;
   align-self: baseline;
   padding-left: 0.02rem;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
-.dot-editor-chip .p-chip__value,
 .dot-editor-chip-text {
-  font-size: 0.85rem !important;
-  line-height: 1.2 !important;
+  font-size: 0.85rem;
+  line-height: 1.2;
   vertical-align: baseline;
   position: relative;
   top: -0.06rem;
 }
 
-.dot-editor-chip .dot-editor-chip-remove,
 .dot-editor-chip-remove {
   order: -1;
   width: 0.74rem;
@@ -438,9 +394,9 @@
   border: 0;
   background: #e3e3e3;
   color: #111;
-  font-size: 0.6rem !important;
+  font-size: 0.6rem;
   font-weight: 700;
-  line-height: 1 !important;
+  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -449,19 +405,16 @@
   opacity: 1;
   visibility: visible;
   padding: 0;
-  text-indent: 0 !important;
-  white-space: normal !important;
+  text-indent: 0;
+  white-space: normal;
   overflow: visible;
   font-family: inherit;
 }
 
-.dot-editor-chip .dot-editor-chip-remove::before,
 .dot-editor-chip-remove::before {
   display: none;
 }
 
-.dot-editor-chip .dot-editor-chip-remove:hover,
-.dot-editor-chip .dot-editor-chip-remove:focus,
 .dot-editor-chip-remove:hover,
 .dot-editor-chip-remove:focus {
   background: #d8d8d8;
@@ -471,7 +424,7 @@
 .dot-editor-chip-input {
   border: 0;
   outline: 0;
-  background: transparent !important;
+  background: transparent;
   min-width: 5rem;
   flex: 1;
   font-size: 0.85rem;
@@ -607,10 +560,6 @@
     font-size: 0.85rem;
   }
 
-  .dot-editor-team-tree li,
-  .dot-editor-team-tree label {
-    font-size: 0.85rem;
-  }
 }
 
 @media (min-width: 1036px) {

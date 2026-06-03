@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from app.models import Dot
-from app.views import DOT_MIN_VISIBLE_OPACITY, DOT_VISIBILITY_WINDOW, build_dot_age_opacity
 
 
 @pytest.mark.django_db
@@ -66,11 +65,3 @@ def test_dot_visibility_is_limited_to_last_two_weeks():
     assert stale_dot.id not in visible_dot_ids
 
 
-@pytest.mark.django_db
-def test_oldest_visible_dot_uses_minimum_fade_opacity():
-    now = timezone.now()
-    dot = Dot.objects.create(x=10, y=20)
-    Dot.objects.filter(id=dot.id).update(created_at=now - DOT_VISIBILITY_WINDOW)
-    dot.refresh_from_db()
-
-    assert build_dot_age_opacity(dot, now) == pytest.approx(DOT_MIN_VISIBLE_OPACITY)

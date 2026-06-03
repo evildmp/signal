@@ -51,7 +51,7 @@
 
       var remove = document.createElement("button");
       remove.type = "button";
-      remove.className = "p-chip__dismiss dot-editor-chip-remove";
+      remove.className = "dot-editor-chip-remove";
       remove.setAttribute("aria-label", "Remove " + value);
       remove.textContent = "x";
 
