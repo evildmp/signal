@@ -95,7 +95,7 @@ def test_dot_title_is_formatted_in_utc(
     dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
     expect(dot_locator).to_be_visible()
 
-    expected_title = dot.created_at.astimezone(timezone.utc).strftime("%a %d %b, %H:%M")
+    expected_title = dot.created_at.astimezone(timezone.UTC).strftime("%a %d %b, %H:%M")
 
     assert dot_locator.get_attribute("title") == expected_title
 
