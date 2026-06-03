@@ -369,14 +369,20 @@
     appendPart('signal-dot-published-feelings', groups.feelings || '');
     appendPart('signal-dot-published-actions', groups.actions || '');
 
-    var x = parseFloat(dot.style.left);
-    var y = parseFloat(dot.style.bottom);
-    if (!Number.isFinite(x)) {
-      x = parseFloat(dot.style.getPropertyValue('--dot-x'));
+    label.style.setProperty('--dot-x', dot.style.getPropertyValue('--dot-x'));
+    label.style.setProperty('--dot-y', dot.style.getPropertyValue('--dot-y'));
+    label.classList.remove(
+      'signal-dot-label--above',
+      'signal-dot-label--below',
+      'signal-dot-label--side',
+      'signal-dot-label--x-left',
+      'signal-dot-label--x-right',
+      'signal-dot-label--x-center'
+    );
+    if (e.detail.labelClass) {
+      e.detail.labelClass.split(' ').forEach(function (klass) {
+        label.classList.add(klass);
+      });
     }
-    if (!Number.isFinite(y)) {
-      y = parseFloat(dot.style.getPropertyValue('--dot-y'));
-    }
-    applyLabelPosition(label, x, y);
   });
 })();
