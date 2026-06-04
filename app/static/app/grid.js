@@ -63,13 +63,12 @@
   });
 
   document.body.addEventListener('htmx:configRequest', function (e) {
-    if (!e.detail || !e.detail.path || e.detail.verb !== 'get') return;
+    if (!e.detail || !e.detail.path) return;
 
-    var match = e.detail.path.match(/^\/dot\/(\d+)\/edit\/$/);
+    var match = e.detail.path.match(/^\/dot\/(\d+)\//);
     if (!match) return;
 
-    var dotId = match[1];
-    var token = ownershipTokenForDotId(dotId);
+    var token = DotTokens.get(match[1]);
     if (token) {
       e.detail.headers = e.detail.headers || {};
       e.detail.headers['X-Ownership-Token'] = token;
@@ -146,15 +145,12 @@
     finishedDrag.dot.style.setProperty('--dot-y', String(snappedPosition.y));
     applyLabelPosition(labelForDotId(finishedDrag.dot.dataset.dotId), snappedPosition.x, snappedPosition.y);
 
-    var ownershipToken = finishedDrag.ownershipToken || '';
-
     suppressGridClickAfterPointerUp();
     htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotId + '/move/', {
       swap: 'none',
       values: {
         x: snappedPosition.x,
-        y: snappedPosition.y,
-        ownership_token: ownershipToken
+        y: snappedPosition.y
       },
       headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content }
     });
@@ -239,8 +235,7 @@
       didMove: false,
       startClientX: e.clientX,
       startClientY: e.clientY,
-      lastPosition: null,
-      ownershipToken: ownershipToken
+      lastPosition: null
     };
 
     document.addEventListener('mousemove', onDragMove);

@@ -141,25 +141,16 @@
     var teamCheckboxes = form.querySelectorAll(
       'input[name="' + teamFieldName + '"]'
     );
-    var ownershipTokenInput = form.querySelector('input[name="ownership_token"]');
     var deleteButton = form.querySelector("[data-delete-dot]");
 
     if (!privateCheckbox) return;
 
     function syncOwnershipToken() {
-      if (!ownershipTokenInput) return;
+      if (!deleteButton) return;
       var token = getStoredOwnershipToken(form);
       var dialog = form.closest("#dot-editor-dialog");
       var isOwnedByUser = dialog && dialog.dataset.dotOwnedByUser === "1";
-
-      ownershipTokenInput.value = token;
-      if (deleteButton) {
-        deleteButton.setAttribute(
-          "hx-vals",
-          JSON.stringify({ ownership_token: token })
-        );
-        deleteButton.disabled = !token && !isOwnedByUser;
-      }
+      deleteButton.disabled = !token && !isOwnedByUser;
     }
 
     function syncPrivateFromTeams() {
