@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -228,3 +230,32 @@ def test_user_cannot_flag_dot_they_cannot_see(
 
     flag_response = client.post(f"/dot/{dot.id}/flag/", {"reason": "cannot see this"})
     assert flag_response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_dot_flag_dotUpdated_payload_includes_published_label_html_not_label_parts(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    """Flag and unflag must fire a dotUpdated payload that includes publishedLabelHtml
+    and excludes the now-redundant labelParts and labelGroups keys."""
+    dot = Dot.objects.create(x=44, y=55, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    client.force_login(jerry_with_explicit_teams)
+    flag_response = client.post(f"/dot/{dot.id}/flag/", {"reason": "test"})
+
+    assert flag_response.status_code == 200
+    trigger = json.loads(flag_response.headers["HX-Trigger"])
+    payload = trigger["dotUpdated"]
+    assert "publishedLabelHtml" in payload
+    assert "labelParts" not in payload
+    assert "labelGroups" not in payload
+
+    unflag_response = client.post(f"/dot/{dot.id}/unflag/")
+
+    assert unflag_response.status_code == 200
+    trigger = json.loads(unflag_response.headers["HX-Trigger"])
+    payload = trigger["dotUpdated"]
+    assert "publishedLabelHtml" in payload
+    assert "labelParts" not in payload
+    assert "labelGroups" not in payload

@@ -33,7 +33,6 @@
     document.querySelectorAll('.signal-dot').forEach(function (dot) {
       var isOwnedByUser = dot.dataset.ownedByUser === '1';
       var hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
-
       if (isOwnedByUser || hasOwnershipToken) {
         dot.classList.add('signal-dot--claimed');
       } else {
@@ -294,6 +293,10 @@
       var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
       tokens[String(e.detail.dotId)] = e.detail.token;
       localStorage.setItem('dotTokens', JSON.stringify(tokens));
+      var dot = document.querySelector('.signal-dot[data-dot-id="' + e.detail.dotId + '"]');
+      if (dot) {
+        dot.dataset.ownedByUser = '1';
+      }
     }
   });
 
@@ -338,51 +341,18 @@
       }
     }
 
-    var label = labelForDotId(dotId);
-    var groups = e.detail.labelGroups || {};
-    var hasGroups = !!(groups.username || groups.feelings || groups.actions);
-    if (!hasGroups) {
-      if (label) {
-        label.remove();
-      }
-      return;
+    var existing = labelForDotId(dotId);
+    if (existing) {
+      existing.remove();
     }
 
-    if (!label) {
-      label = document.createElement('span');
-      label.className = 'signal-dot-published-label';
-      label.dataset.dotId = dotId;
+    if (!e.detail.publishedLabelHtml) return;
+
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = e.detail.publishedLabelHtml.trim();
+    var label = wrapper.firstElementChild;
+    if (label) {
       dot.insertAdjacentElement('afterend', label);
-    }
-
-    label.innerHTML = '';
-
-    function appendPart(className, value) {
-      if (!value) return;
-      var item = document.createElement('span');
-      item.className = className;
-      item.textContent = value;
-      label.appendChild(item);
-    }
-
-    appendPart('signal-dot-published-username', groups.username || '');
-    appendPart('signal-dot-published-feelings', groups.feelings || '');
-    appendPart('signal-dot-published-actions', groups.actions || '');
-
-    label.style.setProperty('--dot-x', dot.style.getPropertyValue('--dot-x'));
-    label.style.setProperty('--dot-y', dot.style.getPropertyValue('--dot-y'));
-    label.classList.remove(
-      'signal-dot-label--above',
-      'signal-dot-label--below',
-      'signal-dot-label--side',
-      'signal-dot-label--x-left',
-      'signal-dot-label--x-right',
-      'signal-dot-label--x-center'
-    );
-    if (e.detail.labelClass) {
-      e.detail.labelClass.split(' ').forEach(function (klass) {
-        label.classList.add(klass);
-      });
     }
   });
 })();

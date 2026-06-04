@@ -550,3 +550,39 @@ def test_dragging_on_grid_background_does_not_create_dot(
     authenticated_page.mouse.up()
 
     expect(authenticated_page.locator(".signal-dot")).to_have_count(initial_dots)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_token_owned_dot_remains_claimed_after_page_reload(authenticated_page):
+    """A dot owned only via localStorage token (no owner_user relation) must keep
+    the signal-dot--claimed class after the page is reloaded, i.e. updateClaimedDotClasses
+    must check localStorage, not only data-owned-by-user."""
+    onboarding_dialog = authenticated_page.locator(
+        "dialog#signal-onboarding-dialog[open]"
+    )
+    if onboarding_dialog.count() > 0:
+        authenticated_page.locator("#signal-onboarding-continue").click()
+
+    grid = authenticated_page.locator(".signal-grid")
+    expect(grid).to_be_visible()
+
+    initial_dot_count = authenticated_page.locator(".signal-dot").count()
+    bb = grid.bounding_box()
+    grid.click(position={"x": bb["width"] * 0.4, "y": bb["height"] * 0.6})
+    expect(authenticated_page.locator(".signal-dot")).to_have_count(
+        initial_dot_count + 1
+    )
+
+    new_dot = authenticated_page.locator(".signal-dot").last
+    dot_id = new_dot.get_attribute("data-dot-id")
+    expect(new_dot).to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
+
+    # Reload — server renders data-owned-by-user="0" on plain GET (no localStorage
+    # tokens submitted), so only the localStorage check in updateClaimedDotClasses
+    # can restore the orange styling.
+    authenticated_page.reload()
+
+    dot_after_reload = authenticated_page.locator(
+        f'.signal-dot[data-dot-id="{dot_id}"]'
+    )
+    expect(dot_after_reload).to_have_class(re.compile(r"\bsignal-dot--claimed\b"))

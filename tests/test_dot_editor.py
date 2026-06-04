@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
@@ -653,3 +655,30 @@ def test_dot_editor_post_rolls_back_team_changes_when_save_fails(
     assert set(dot.teams.values_list("id", flat=True)) == {
         minimum_team_hierarchy["blue"].id
     }
+
+
+@pytest.mark.django_db
+def test_dot_edit_post_dotUpdated_payload_includes_published_label_html_not_label_parts(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    """The dotUpdated HX-Trigger payload must include publishedLabelHtml (server-rendered)
+    and must not include labelParts or labelGroups — those are internal rendering
+    details the JS handler no longer needs."""
+    client.force_login(jerry_with_explicit_teams)
+    dot = Dot.objects.create(x=50, y=50, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    response = client.post(
+        f"/dot/{dot.id}/edit/",
+        {
+            "team_ids": [str(minimum_team_hierarchy["blue"].id)],
+            "include_name": "on",
+        },
+    )
+
+    assert response.status_code == 200
+    trigger = json.loads(response.headers["HX-Trigger"])
+    payload = trigger["dotUpdated"]
+    assert "publishedLabelHtml" in payload
+    assert "labelParts" not in payload
+    assert "labelGroups" not in payload

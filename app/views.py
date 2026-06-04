@@ -218,14 +218,19 @@ def build_dot_editor_context(request, dot):
 
 
 def build_dot_updated_payload(request, dot):
+    dot.published_label_parts = build_published_label_parts(dot)
+    dot.published_label_groups = build_published_label_groups(dot)
+    dot.published_label_class = build_dot_label_position_class(dot)
     return {
         "dotId": dot.id,
         "ownedByUser": user_can_manage_dot(
             request, dot, request_ownership_token(request)
         ),
-        "labelParts": build_published_label_parts(dot),
-        "labelGroups": build_published_label_groups(dot),
-        "labelClass": build_dot_label_position_class(dot),
+        "labelClass": dot.published_label_class,
+        "publishedLabelHtml": render_to_string(
+            "app/_dot_published_label.html",
+            {"dot": dot},
+        ),
     }
 
 
@@ -515,15 +520,7 @@ def dot_edit(request, dot_id):
                     ]
                 )
 
-            payload = {
-                "dotId": dot.id,
-                "ownedByUser": user_can_manage_dot(
-                    request, dot, request_ownership_token(request)
-                ),
-                "labelParts": build_published_label_parts(dot),
-                "labelGroups": build_published_label_groups(dot),
-                "labelClass": build_dot_label_position_class(dot),
-            }
+            payload = build_dot_updated_payload(request, dot)
 
             team_names = list(dot.teams.order_by("name").values_list("name", flat=True))
             if not team_names:

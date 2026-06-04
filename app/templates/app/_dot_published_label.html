@@ -1,0 +1,17 @@
+{% if dot.published_label_parts %}
+<span
+  class="signal-dot-published-label {{ dot.published_label_class }}"
+  data-dot-id="{{ dot.id }}"
+  style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};"
+>
+  {% if dot.published_label_groups.username %}
+    <span class="signal-dot-published-username">{{ dot.published_label_groups.username }}</span>
+  {% endif %}
+  {% if dot.published_label_groups.feelings %}
+    <span class="signal-dot-published-feelings">{{ dot.published_label_groups.feelings }}</span>
+  {% endif %}
+  {% if dot.published_label_groups.actions %}
+    <span class="signal-dot-published-actions">{{ dot.published_label_groups.actions }}</span>
+  {% endif %}
+</span>
+{% endif %}

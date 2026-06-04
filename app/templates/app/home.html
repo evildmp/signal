@@ -108,23 +108,7 @@
               <span class="signal-axis signal-axis--y-bottom p-text--small">Settled</span>
               {% for dot in dots %}
                 {% include "app/_dot.html" with dot=dot %}
-                {% if dot.published_label_parts %}
-                  <span
-                    class="signal-dot-published-label {{ dot.published_label_class }}"
-                    data-dot-id="{{ dot.id }}"
-                    style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};"
-                  >
-                    {% if dot.published_label_groups.username %}
-                      <span class="signal-dot-published-username">{{ dot.published_label_groups.username }}</span>
-                    {% endif %}
-                    {% if dot.published_label_groups.feelings %}
-                      <span class="signal-dot-published-feelings">{{ dot.published_label_groups.feelings }}</span>
-                    {% endif %}
-                    {% if dot.published_label_groups.actions %}
-                      <span class="signal-dot-published-actions">{{ dot.published_label_groups.actions }}</span>
-                    {% endif %}
-                  </span>
-                {% endif %}
+                {% include "app/_dot_published_label.html" with dot=dot %}
               {% endfor %}
             </section>
             <div id="dot-editor-host"></div>
