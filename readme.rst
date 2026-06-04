@@ -31,7 +31,7 @@ Dots fade over time.
 Anonymity
 ---------
 
-Anonymity is key. The backend can't connect a dot to a user; it's only possible with a claim token.
+Anonymity is key. The backend can't connect a dot to a user unless the user explicitly chooses that.
 
 Working with Signal
 ===================
@@ -51,3 +51,14 @@ How to run tests
 ----------------
 
 Run `python -m pytest`.
+
+Internals
+=========
+
+A dot is anonymous by default, but can be associated with an owner through an ``owner_user`` relation.
+
+In order to make dot management possible without that relation, the user who creates the dot gets an ``ownership_token`` with a UUID, that's stored in the browser's Local Storage. This allows the browser to prove that the user owns a particular dot, without any backend association with a user.
+
+An *adjective-colour-noun* claim token is shown to the user when a dot is first created. This is a convenient way of claiming a particular dot without having an ``owner_user`` relation (for example, in a new browser or on another device).
+
+Optionally, *if* the owner of the dot selects the *Show my name option*, then the ``owner_user`` relation is set on the dot. This is convenient, because it's more robust and persistent.
