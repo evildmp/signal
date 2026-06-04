@@ -586,3 +586,54 @@ def test_token_owned_dot_remains_claimed_after_page_reload(authenticated_page):
         f'.signal-dot[data-dot-id="{dot_id}"]'
     )
     expect(dot_after_reload).to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dot_tokens_global_is_defined_and_works(authenticated_page):
+    """window.DotTokens must be a globally accessible module with get/set/remove/all
+    methods that correctly wrap localStorage['dotTokens']."""
+    page = authenticated_page
+
+    # The module must be present on page load.
+    assert page.evaluate("() => typeof window.DotTokens") == "object"
+    assert page.evaluate("() => typeof window.DotTokens.get") == "function"
+    assert page.evaluate("() => typeof window.DotTokens.set") == "function"
+    assert page.evaluate("() => typeof window.DotTokens.remove") == "function"
+    assert page.evaluate("() => typeof window.DotTokens.all") == "function"
+
+    # Start from a clean slate for this test.
+    page.evaluate("() => localStorage.removeItem('dotTokens')")
+
+    # all() on empty storage returns an empty object.
+    assert page.evaluate("() => window.DotTokens.all()") == {}
+
+    # set() stores a token; get() retrieves it; all() includes it.
+    page.evaluate("() => window.DotTokens.set('42', 'tok-abc')")
+    assert page.evaluate("() => window.DotTokens.get('42')") == "tok-abc"
+    assert page.evaluate("() => window.DotTokens.all()") == {"42": "tok-abc"}
+
+    # A second token coexists with the first.
+    page.evaluate("() => window.DotTokens.set('99', 'tok-xyz')")
+    assert page.evaluate("() => window.DotTokens.all()") == {
+        "42": "tok-abc",
+        "99": "tok-xyz",
+    }
+
+    # get() for an unknown id returns an empty string.
+    assert page.evaluate("() => window.DotTokens.get('0')") == ""
+
+    # remove() deletes one token and leaves others intact.
+    page.evaluate("() => window.DotTokens.remove('42')")
+    assert page.evaluate("() => window.DotTokens.get('42')") == ""
+    assert page.evaluate("() => window.DotTokens.get('99')") == "tok-xyz"
+
+    # remove() on a non-existent id does not throw.
+    page.evaluate("() => window.DotTokens.remove('0')")
+
+    # A corrupted localStorage value must not throw — all() returns {}.
+    page.evaluate("() => localStorage.setItem('dotTokens', 'not-json')")
+    assert page.evaluate("() => window.DotTokens.all()") == {}
+
+    # After the corrupted read, set() recovers and writes correctly.
+    page.evaluate("() => window.DotTokens.set('1', 'tok-recover')")
+    assert page.evaluate("() => window.DotTokens.get('1')") == "tok-recover"

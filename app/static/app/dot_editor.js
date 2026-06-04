@@ -1,13 +1,8 @@
 (function () {
   function getStoredOwnershipToken(form) {
-    try {
-      var tokens = JSON.parse(localStorage.getItem("dotTokens") || "{}");
-      var dotId = form.dataset.dotId || "";
-      if (!dotId) return "";
-      return tokens[dotId] || "";
-    } catch (error) {
-      return "";
-    }
+    var dotId = form.dataset.dotId || '';
+    if (!dotId) return '';
+    return DotTokens.get(dotId);
   }
 
   function wireSentimentPicker(form, picker) {

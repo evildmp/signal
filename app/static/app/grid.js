@@ -29,7 +29,7 @@
   }
 
   function updateClaimedDotClasses() {
-    var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
+    var tokens = DotTokens.all();
     document.querySelectorAll('.signal-dot').forEach(function (dot) {
       var isOwnedByUser = dot.dataset.ownedByUser === '1';
       var hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
@@ -44,8 +44,7 @@
   function ownershipTokenForDotId(dotId) {
     var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
     if (!dot) return '';
-    var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-    return ownershipTokenForDot(dot, tokens);
+    return ownershipTokenForDot(dot, DotTokens.all());
   }
 
   // Initial mark
@@ -290,9 +289,7 @@
 
   document.body.addEventListener('dotClaimed', function (e) {
     if (e.detail) {
-      var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-      tokens[String(e.detail.dotId)] = e.detail.token;
-      localStorage.setItem('dotTokens', JSON.stringify(tokens));
+      DotTokens.set(String(e.detail.dotId), e.detail.token);
       var dot = document.querySelector('.signal-dot[data-dot-id="' + e.detail.dotId + '"]');
       if (dot) {
         dot.dataset.ownedByUser = '1';
@@ -314,11 +311,7 @@
       label.remove();
     }
 
-    var tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-    if (tokens[dotId]) {
-      delete tokens[dotId];
-      localStorage.setItem('dotTokens', JSON.stringify(tokens));
-    }
+    DotTokens.remove(dotId);
   });
 
   document.body.addEventListener('dotUpdated', function (e) {

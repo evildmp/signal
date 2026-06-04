@@ -9,12 +9,7 @@
     if (!tokenHost) return;
     tokenHost.innerHTML = '';
 
-    var tokens = {};
-    try {
-      tokens = JSON.parse(localStorage.getItem('dotTokens') || '{}');
-    } catch (error) {
-      tokens = {};
-    }
+    var tokens = DotTokens.all();
 
     Object.keys(tokens).forEach(function (dotId) {
       var token = tokens[dotId];
