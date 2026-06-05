@@ -43,6 +43,7 @@ class DotAdmin(admin.ModelAdmin):
         "owner_user",
         "flagged_by",
         "flagged_at",
+        "ownership_token",
     )
     readonly_fields = (
         "claim_token",

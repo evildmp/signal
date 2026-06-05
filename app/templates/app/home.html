@@ -38,7 +38,7 @@
               </div>
             </div>
             <div class="p-panel__content drawer-content">
-              <form id="drawer-filter-form" method="post" hx-post="/" hx-trigger="change" hx-target="body">
+              <form id="drawer-filter-form" method="post" hx-post="/" hx-trigger="change from:input" hx-target="body">
                 {% csrf_token %}
                 {{ drawer_filter_form.action }}
                 <div id="drawer-ownership-tokens" hidden></div>

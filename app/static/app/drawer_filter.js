@@ -1,9 +1,8 @@
 (function () {
   const form = document.getElementById('drawer-filter-form');
   if (!form) return;
-  const toggle = form.querySelector('#id_enabled');
+  const actionInput = form.querySelector('input[name="action"]');
   const tokenHost = form.querySelector('#drawer-ownership-tokens');
-  const teamBoxes = function () { return form.querySelectorAll('[name="team_ids"]'); };
 
   function syncOwnershipTokens() {
     if (!tokenHost) return;
@@ -24,13 +23,15 @@
 
   syncOwnershipTokens();
 
-  // Use capture phase so mutual-exclusion runs before HTMX serialises.
+  // Use capture phase so ownership-token inputs exist before HTMX serialises.
   form.addEventListener('change', function (e) {
-    syncOwnershipTokens();
-    if (e.target === toggle && toggle.checked) {
-      teamBoxes().forEach(function (cb) { cb.checked = false; });
-    } else if (e.target.name === 'team_ids' && e.target.checked) {
-      if (toggle) toggle.checked = false;
+    if (actionInput) {
+      if (e.target && e.target.name === 'enabled') {
+        actionInput.value = 'set_my_dots_only';
+      } else if (e.target && e.target.name === 'team_ids') {
+        actionInput.value = 'set_team_filters';
+      }
     }
+    syncOwnershipTokens();
   }, true);
 })();

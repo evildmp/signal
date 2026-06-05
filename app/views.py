@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -267,10 +267,19 @@ def home(request):
             )
 
         if drawer_filter_form.is_valid():
+            hx_trigger_name = request.headers.get("HX-Trigger-Name", "")
+            team_trigger_name = drawer_filter_form["team_ids"].html_name
+            cleaned_team_ids = drawer_filter_form.cleaned_team_ids()
             my_dots_only = drawer_filter_form.cleaned_data.get("enabled", False)
-            selected_team_ids = (
-                set() if my_dots_only else drawer_filter_form.cleaned_team_ids()
-            )
+            # set_filters is the fallback when JS does not route to a specific
+            # action (e.g. direct form submission without JS). HX-Trigger-Name
+            # breaks the tie: a team checkbox as the trigger overrides enabled.
+            if action == "set_filters":
+                team_was_trigger = hx_trigger_name == team_trigger_name
+                if team_was_trigger:
+                    my_dots_only = False
+
+            selected_team_ids = set() if my_dots_only else cleaned_team_ids
         else:
             my_dots_only = False
             selected_team_ids = set()
@@ -630,6 +639,32 @@ def dot_flag(request, dot_id):
         {"dotUpdated": build_dot_updated_payload(request, dot)}
     )
     return response
+
+
+@login_required
+@require_POST
+def verify_ownership_tokens(request):
+    dot_token_strings = request.POST.getlist("dot_token")[:100]
+
+    q = None
+    for entry in dot_token_strings:
+        parts = entry.split(":", 1)
+        if len(parts) != 2:
+            continue
+        try:
+            dot_id = int(parts[0])
+            token = UUID(parts[1])
+        except (TypeError, ValueError):
+            continue
+        from django.db.models import Q
+        pair = Q(id=dot_id, ownership_token=token)
+        q = pair if q is None else q | pair
+
+    if q is None:
+        return JsonResponse({"verified_dot_ids": []})
+
+    verified_ids = list(Dot.objects.filter(q).values_list("id", flat=True))
+    return JsonResponse({"verified_dot_ids": verified_ids})
 
 
 @login_required

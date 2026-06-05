@@ -47,8 +47,45 @@
     return ownershipTokenForDot(dot, DotTokens.all());
   }
 
-  // Initial mark
+  // Initial mark — uses localStorage presence only; verification fetch below
+  // corrects any stale entries without requiring the token to be in the DOM.
   updateClaimedDotClasses();
+
+  (function verifyOwnershipTokens() {
+    const tokens = DotTokens.all();
+    const entries = Object.entries(tokens);
+    if (entries.length === 0) return;
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const body = new URLSearchParams();
+    body.append('csrfmiddlewaretoken', csrf);
+    entries.forEach(function (entry) {
+      body.append('dot_token', entry[0] + ':' + entry[1]);
+    });
+
+    fetch('/verify-tokens/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf },
+      body: body,
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        const verifiedIds = new Set(data.verified_dot_ids.map(String));
+        entries.forEach(function (entry) {
+          const dotId = entry[0];
+          if (!verifiedIds.has(dotId)) {
+            DotTokens.remove(dotId);
+            const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+            if (dot) dot.dataset.ownedByUser = '0';
+          } else {
+            const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+            if (dot) dot.dataset.ownedByUser = '1';
+          }
+        });
+        updateClaimedDotClasses();
+      })
+      .catch(function () { /* network failure — leave current state intact */ });
+  }());
 
   // After new dot claim
   document.body.addEventListener('dotClaimed', function () {
@@ -223,9 +260,9 @@
       return;
     }
 
-    const ownershipToken = ownershipTokenForDotId(dot.dataset.dotId);
+    const localToken = ownershipTokenForDotId(dot.dataset.dotId);
     const isOwnedByUser = dot.dataset.ownedByUser === '1';
-    if (!ownershipToken && !isOwnedByUser) {
+    if (!localToken && !isOwnedByUser) {
       beginGridPointerGesture(e);
       return;
     }

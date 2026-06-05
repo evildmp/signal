@@ -639,3 +639,112 @@ def test_dot_tokens_global_is_defined_and_works(authenticated_page):
     # After the corrupted read, set() recovers and writes correctly.
     page.evaluate("() => window.DotTokens.set('1', 'tok-recover')")
     assert page.evaluate("() => window.DotTokens.get('1')") == "tok-recover"
+
+
+from test_main_view_playwright import ORANGE_RGB
+
+WRONG_TOKEN = "00000000-0000-0000-0000-000000000000"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_wrong_localStorage_token_does_not_make_dot_appear_claimed(
+    page, login_jerry, minimum_team_hierarchy
+):
+    """A dot whose ID is present in localStorage, but with a token value that does
+    not match the server's ownership_token, must NOT receive the signal-dot--claimed
+    class and must NOT be displayed in orange.
+
+    The verification fetch in grid.js posts all localStorage tokens to /verify-tokens/.
+    The server returns only dot IDs where the token matches. For dots whose stored
+    token fails verification the stale entry is removed from localStorage and the
+    dot is un-claimed."""
+    dot = Dot.objects.create(x=50, y=50)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    # Store a token that differs from dot.ownership_token.
+    page.evaluate(
+        "(args) => window.DotTokens.set(String(args.dotId), args.token)",
+        {"dotId": dot.id, "token": WRONG_TOKEN},
+    )
+
+    # Reload so the server confirms data-owned-by-user="0" (correct — the token
+    # was not submitted), then updateClaimedDotClasses() runs client-side.
+    page.reload()
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    # The dot must not be marked as claimed — both assertions currently FAIL.
+    expect(dot_locator).not_to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
+
+    colour = page.evaluate(
+        "(dotId) => getComputedStyle(document.querySelector("
+        "'.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill'"
+        ")).backgroundColor",
+        str(dot.id),
+    )
+    assert colour != ORANGE_RGB
+
+
+@pytest.mark.django_db(transaction=True)
+def test_wrong_localStorage_token_does_not_make_dot_draggable(
+    page, login_jerry, minimum_team_hierarchy
+):
+    """A dot whose ID is in localStorage with a wrong token must not be draggable.
+    The mousedown handler in grid.js only initiates a drag when the stored
+    token is verified correct by the server — not merely present in localStorage.
+
+    After the verification fetch removes the stale entry, neither updateClaimedDotClasses
+    nor the mousedown guard treats the dot as owned."""
+    dot = Dot.objects.create(x=50, y=50)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    page.evaluate(
+        "(args) => window.DotTokens.set(String(args.dotId), args.token)",
+        {"dotId": dot.id, "token": WRONG_TOKEN},
+    )
+
+    page.reload()
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    # Wait for the verification fetch to complete: it removes the stale
+    # localStorage entry and strips signal-dot--claimed from the element.
+    expect(dot_locator).not_to_have_class(re.compile(r"\bsignal-dot--claimed\b"))
+
+    initial_x = page.evaluate(
+        "(dotId) => document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"')"
+        ".style.getPropertyValue('--dot-x')",
+        str(dot.id),
+    )
+    assert initial_x != "", "dot must have --dot-x set in its inline style"
+
+    # Attempt a drag far enough to exceed the 3-pixel movement threshold.
+    bb = dot_locator.bounding_box()
+    centre_x = bb["x"] + bb["width"] / 2
+    centre_y = bb["y"] + bb["height"] / 2
+    page.mouse.move(centre_x, centre_y)
+    page.mouse.down()
+    page.mouse.move(centre_x + 80, centre_y - 80)
+
+    dragged_x = page.evaluate(
+        "(dotId) => document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')"
+        ".style.getPropertyValue('--dot-x')",
+        str(dot.id),
+    )
+
+    page.mouse.up()
+
+    # If drag was NOT initiated the CSS custom property must be unchanged.
+    assert dragged_x == initial_x

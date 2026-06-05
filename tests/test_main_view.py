@@ -2,7 +2,6 @@ import re
 
 import pytest
 from django.contrib.auth import get_user_model
-import re
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
@@ -10,6 +9,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from app.forms import DrawerFilterForm
 from app.models import Dot, Team
 
 
@@ -157,6 +157,74 @@ def test_home_post_keeps_drawer_filter_form_bound(
 
     assert response.status_code == 200
     assert response.context["drawer_filter_form"].is_bound is True
+
+
+@pytest.mark.django_db
+def test_set_filters_with_enabled_trigger_prioritizes_my_dots_only(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    blue_team_id = minimum_team_hierarchy["blue"].id
+    response = client.post(
+        "/",
+        {
+            "action": "set_filters",
+            "enabled": "1",
+            "team_ids": [str(blue_team_id)],
+        },
+        HTTP_HX_TRIGGER_NAME="enabled",
+    )
+
+    assert response.status_code == 200
+    assert response.context["my_dots_only"] is True
+    assert response.context["selected_team_ids"] == set()
+
+
+@pytest.mark.django_db
+def test_set_filters_with_team_trigger_clears_my_dots_only(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    blue_team_id = minimum_team_hierarchy["blue"].id
+    team_trigger_name = DrawerFilterForm(
+        team_choices=[(blue_team_id, "Blue")]
+    )["team_ids"].html_name
+    response = client.post(
+        "/",
+        {
+            "action": "set_filters",
+            "enabled": "1",
+            "team_ids": [str(blue_team_id)],
+        },
+        HTTP_HX_TRIGGER_NAME=team_trigger_name,
+    )
+
+    assert response.status_code == 200
+    assert response.context["my_dots_only"] is False
+    assert response.context["selected_team_ids"] == {blue_team_id}
+
+
+@pytest.mark.django_db
+def test_set_filters_without_trigger_name_keeps_enabled_precedence(
+    client, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    client.force_login(jerry_with_explicit_teams)
+
+    blue_team_id = minimum_team_hierarchy["blue"].id
+    response = client.post(
+        "/",
+        {
+            "action": "set_filters",
+            "enabled": "1",
+            "team_ids": [str(blue_team_id)],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["my_dots_only"] is True
+    assert response.context["selected_team_ids"] == set()
 
 
 @pytest.mark.django_db

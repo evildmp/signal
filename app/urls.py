@@ -11,6 +11,7 @@ from .views import (
     dot_unflag,
     move_dot,
     dismiss_signal_onboarding,
+    verify_ownership_tokens,
 )
 
 urlpatterns = [
@@ -28,4 +29,5 @@ urlpatterns = [
         dismiss_signal_onboarding,
         name="dismiss_signal_onboarding",
     ),
+    path("verify-tokens/", verify_ownership_tokens, name="verify_ownership_tokens"),
 ]
