@@ -133,8 +133,15 @@
   );
   transform: translate(-50%, 50%);
   cursor: pointer;
+  touch-action: none;
   z-index: 2;
   box-shadow: none;
+}
+
+body.signal-dragging,
+body.signal-dragging * {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .signal-dot-fill {

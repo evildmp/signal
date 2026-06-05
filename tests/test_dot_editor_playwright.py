@@ -121,6 +121,142 @@ def test_dragging_dot_with_owner_relation_does_nothing(
 
 
 @pytest.mark.django_db(transaction=True)
+def test_dragging_owned_dot_with_pointer_events_moves_it(
+    page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=30, y=70, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    dot_locator = page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')
+    expect(dot_locator).to_be_visible()
+
+    initial_x = page.evaluate(
+        """
+        (dotId) => document
+          .querySelector('.signal-dot[data-dot-id="' + dotId + '"]')
+          .style.getPropertyValue('--dot-x')
+        """,
+        str(dot.id),
+    )
+
+    dot_box = dot_locator.bounding_box()
+    start_x = dot_box["x"] + dot_box["width"] / 2
+    start_y = dot_box["y"] + dot_box["height"] / 2
+    end_x = start_x + 90
+    end_y = start_y - 80
+
+    page.evaluate(
+        """
+        ({ dotId, startX, startY, endX, endY }) => {
+          const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+          const withCoords = (x, y, buttons) => ({
+            bubbles: true,
+            cancelable: true,
+            pointerId: 1,
+            pointerType: 'touch',
+            isPrimary: true,
+            button: 0,
+            buttons: buttons,
+            clientX: x,
+            clientY: y,
+          });
+
+          dot.dispatchEvent(new PointerEvent('pointerdown', withCoords(startX, startY, 1)));
+          document.dispatchEvent(new PointerEvent('pointermove', withCoords(endX, endY, 1)));
+          document.dispatchEvent(new PointerEvent('pointerup', withCoords(endX, endY, 0)));
+        }
+        """,
+        {
+            "dotId": str(dot.id),
+            "startX": start_x,
+            "startY": start_y,
+            "endX": end_x,
+            "endY": end_y,
+        },
+    )
+
+    dragged_x = page.evaluate(
+        """
+        (dotId) => document
+          .querySelector('.signal-dot[data-dot-id="' + dotId + '"]')
+          .style.getPropertyValue('--dot-x')
+        """,
+        str(dot.id),
+    )
+
+    assert dragged_x != initial_x
+
+
+@pytest.mark.django_db(transaction=True)
+def test_dragging_owned_dot_does_not_select_all_grid_labels(
+        page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+        draggable_dot = Dot.objects.create(x=52, y=45, owner_user=jerry_with_explicit_teams)
+        draggable_dot.teams.add(minimum_team_hierarchy["blue"])
+
+        # Seed additional published labels so drag crosses multiple text nodes.
+        label_dot_a = Dot.objects.create(x=30, y=70, owner_user=jerry_with_explicit_teams)
+        label_dot_a.teams.add(minimum_team_hierarchy["blue"])
+        label_dot_b = Dot.objects.create(x=70, y=20, owner_user=jerry_with_explicit_teams)
+        label_dot_b.teams.add(minimum_team_hierarchy["blue"])
+
+        login_jerry(page)
+
+        dot_locator = page.locator(f'.signal-dot[data-dot-id="{draggable_dot.id}"]')
+        expect(dot_locator).to_be_visible()
+
+        page.evaluate("() => window.getSelection().removeAllRanges()")
+
+        initial_x = page.evaluate(
+                """
+                (dotId) => document
+                    .querySelector('.signal-dot[data-dot-id="' + dotId + '"]')
+                    .style.getPropertyValue('--dot-x')
+                """,
+                str(draggable_dot.id),
+        )
+
+        dot_box = dot_locator.bounding_box()
+        start_x = dot_box["x"] + dot_box["width"] / 2
+        start_y = dot_box["y"] + dot_box["height"] / 2
+
+        # Drag toward the upper-right edge through the dense label area.
+        page.mouse.move(start_x, start_y)
+        page.mouse.down()
+        page.mouse.move(start_x + 260, start_y - 190, steps=16)
+        assert page.evaluate("() => document.body.classList.contains('signal-dragging')")
+        page.mouse.up()
+        assert not page.evaluate(
+            "() => document.body.classList.contains('signal-dragging')"
+        )
+
+        dragged_x = page.evaluate(
+                """
+                (dotId) => document
+                    .querySelector('.signal-dot[data-dot-id="' + dotId + '"]')
+                    .style.getPropertyValue('--dot-x')
+                """,
+                str(draggable_dot.id),
+        )
+        assert dragged_x != initial_x
+
+        selected_text = page.evaluate("() => window.getSelection().toString()")
+        selection_is_collapsed = page.evaluate(
+                """
+                () => {
+                    const selection = window.getSelection();
+                    return !selection || selection.isCollapsed;
+                }
+                """
+        )
+
+        assert selection_is_collapsed
+        assert selected_text.strip() == ""
+
+
+@pytest.mark.django_db(transaction=True)
 def test_dot_editor_dialog_has_cancel_button_and_no_close_button(
     page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
 ):

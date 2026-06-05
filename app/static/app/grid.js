@@ -5,6 +5,15 @@
   let suppressNextGridClick = false;
   let dragState = null;
   let gridPointerGesture = null;
+  const dragSelectionClass = 'signal-dragging';
+
+  function setDragSelectionSuppressed(isSuppressed) {
+    if (isSuppressed) {
+      document.body.classList.add(dragSelectionClass);
+    } else {
+      document.body.classList.remove(dragSelectionClass);
+    }
+  }
 
   function suppressGridClickAfterPointerUp() {
     suppressNextGridClick = true;
@@ -165,11 +174,21 @@
 
   function endDrag() {
     if (!dragState) return;
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('mouseup', onDragEnd);
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+    document.removeEventListener('pointercancel', onDragEnd);
+
+    if (dragState.hadPointerCapture && dragState.captureTarget && typeof dragState.captureTarget.releasePointerCapture === 'function') {
+      try {
+        dragState.captureTarget.releasePointerCapture(dragState.pointerId);
+      } catch (_) {
+        // Ignore release errors from synthetic or already-finished pointers.
+      }
+    }
 
     const finishedDrag = dragState;
     dragState = null;
+    setDragSelectionSuppressed(false);
 
     if (!finishedDrag.didMove || !finishedDrag.lastPosition) return;
 
@@ -195,6 +214,9 @@
 
   function onDragMove(e) {
     if (!dragState) return;
+    if (e.pointerId !== dragState.pointerId) return;
+
+    e.preventDefault();
 
     if (Math.abs(e.clientX - dragState.startClientX) + Math.abs(e.clientY - dragState.startClientY) > 3) {
       dragState.didMove = true;
@@ -207,23 +229,36 @@
     applyLabelPosition(labelForDotId(dragState.dot.dataset.dotId), position.x, position.y);
   }
 
-  function onDragEnd() {
+  function onDragEnd(e) {
+    if (!dragState) return;
+    if (e.pointerId !== dragState.pointerId) return;
     endDrag();
   }
 
   function onGridPointerMove(e) {
     if (!gridPointerGesture) return;
+    if (e.pointerId !== gridPointerGesture.pointerId) return;
 
     if (Math.abs(e.clientX - gridPointerGesture.startClientX) + Math.abs(e.clientY - gridPointerGesture.startClientY) > 3) {
       gridPointerGesture.didMove = true;
     }
   }
 
-  function onGridPointerUp() {
+  function onGridPointerUp(e) {
     if (!gridPointerGesture) return;
+    if (e.pointerId !== gridPointerGesture.pointerId) return;
 
-    document.removeEventListener('mousemove', onGridPointerMove);
-    document.removeEventListener('mouseup', onGridPointerUp);
+    document.removeEventListener('pointermove', onGridPointerMove);
+    document.removeEventListener('pointerup', onGridPointerUp);
+    document.removeEventListener('pointercancel', onGridPointerUp);
+
+    if (gridPointerGesture.hadPointerCapture && gridPointerGesture.captureTarget && typeof gridPointerGesture.captureTarget.releasePointerCapture === 'function') {
+      try {
+        gridPointerGesture.captureTarget.releasePointerCapture(gridPointerGesture.pointerId);
+      } catch (_) {
+        // Ignore release errors from synthetic or already-finished pointers.
+      }
+    }
 
     const finishedGesture = gridPointerGesture;
     gridPointerGesture = null;
@@ -234,14 +269,30 @@
   }
 
   function beginGridPointerGesture(e) {
+    const captureTarget = e.currentTarget;
+    const shouldCapturePointer = e.pointerType !== 'mouse';
+
     gridPointerGesture = {
       didMove: false,
+      pointerId: e.pointerId,
+      captureTarget: captureTarget,
+      hadPointerCapture: false,
       startClientX: e.clientX,
       startClientY: e.clientY
     };
 
-    document.addEventListener('mousemove', onGridPointerMove);
-    document.addEventListener('mouseup', onGridPointerUp);
+    if (shouldCapturePointer && captureTarget && typeof captureTarget.setPointerCapture === 'function') {
+      try {
+        captureTarget.setPointerCapture(e.pointerId);
+        gridPointerGesture.hadPointerCapture = true;
+      } catch (_) {
+        // Ignore capture errors from synthetic pointers used in tests.
+      }
+    }
+
+    document.addEventListener('pointermove', onGridPointerMove);
+    document.addEventListener('pointerup', onGridPointerUp);
+    document.addEventListener('pointercancel', onGridPointerUp);
   }
 
   function clearTransientDotLabels() {
@@ -250,7 +301,9 @@
     });
   }
 
-  grid.addEventListener('mousedown', function (e) {
+  grid.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0 || !e.isPrimary) return;
+
     clearTransientDotLabels();
 
     const dot = e.target.closest('.signal-dot');
@@ -270,14 +323,28 @@
     dragState = {
       dot: dot,
       didMove: false,
+      pointerId: e.pointerId,
+      captureTarget: dot,
+      hadPointerCapture: false,
       startClientX: e.clientX,
       startClientY: e.clientY,
       lastPosition: null
     };
 
-    document.addEventListener('mousemove', onDragMove);
-    document.addEventListener('mouseup', onDragEnd);
-    e.preventDefault();
+    setDragSelectionSuppressed(true);
+
+    if (e.pointerType !== 'mouse' && dot && typeof dot.setPointerCapture === 'function') {
+      try {
+        dot.setPointerCapture(e.pointerId);
+        dragState.hadPointerCapture = true;
+      } catch (_) {
+        // Ignore capture errors from synthetic pointers used in tests.
+      }
+    }
+
+    document.addEventListener('pointermove', onDragMove);
+    document.addEventListener('pointerup', onDragEnd);
+    document.addEventListener('pointercancel', onDragEnd);
   });
 
   grid.addEventListener('click', function (e) {
