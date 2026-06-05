@@ -433,7 +433,7 @@ class Command(BaseCommand):
                 )
 
                 age_rng = _deterministic_rng("created-at", username, dot_number)
-                age_in_days = age_rng.randint(0, 13)
+                age_in_days = age_rng.randint(0, 12)
                 created_at = run_anchor - timedelta(
                     days=age_in_days,
                     hours=age_rng.randint(0, 23),

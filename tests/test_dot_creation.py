@@ -328,9 +328,11 @@ def test_newly_created_dot_gets_claimed_styling_from_ownership_token(
 
     initial_dot_count = authenticated_page.locator(".signal-dot").count()
     bounding_box = grid.bounding_box()
-    authenticated_page.mouse.click(
-        bounding_box["x"] + bounding_box["width"] * 0.4,
-        bounding_box["y"] + bounding_box["height"] * 0.6,
+    grid.click(
+        position={
+            "x": bounding_box["width"] * 0.4,
+            "y": bounding_box["height"] * 0.6,
+        }
     )
 
     expect(authenticated_page.locator(".signal-dot")).to_have_count(

@@ -3,9 +3,14 @@ import os
 import pytest
 from django.contrib.auth import get_user_model
 
-from app.models import Team, TeamMembership
+from app.models import SignalOnboardingState, Team, TeamMembership
 
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
+
+
+@pytest.fixture(autouse=True)
+def fast_password_hashing(settings):
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 
 @pytest.fixture
@@ -39,18 +44,17 @@ def jerry_with_explicit_teams(minimum_team_hierarchy):
 
 @pytest.fixture
 def login_jerry(live_server, jerry_with_explicit_teams):
+    SignalOnboardingState.objects.update_or_create(
+        user=jerry_with_explicit_teams,
+        defaults={"using_signal_seen": True},
+    )
+
     def _login(page):
         page.goto(f"{live_server.url}/login/")
         page.locator('input[name="username"]').fill("jerry")
         page.locator('input[name="password"]').fill("jerry")
         page.get_by_role("button", name="Log in").click()
-
-        try:
-            page.locator(
-                "dialog#signal-onboarding-dialog[open] #signal-onboarding-continue"
-            ).click(timeout=3000)
-        except Exception:
-            pass
+        page.wait_for_url(lambda url: "/login" not in url, wait_until="load")
 
     return _login
 

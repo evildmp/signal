@@ -1,5 +1,6 @@
 -r requirements.txt
 pytest==8.4.2
 pytest-django==4.11.1
+pytest-xdist==3.8.0
 playwright==1.52.0
 pytest-playwright==0.7.0
