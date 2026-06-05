@@ -43,3 +43,7 @@ test-results/
 # IDEs
 .idea/
 .vscode/
+signal.code-workspace
+
+# Local working notes
+REVIEW.md
