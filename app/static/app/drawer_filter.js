@@ -1,20 +1,20 @@
 (function () {
-  var form = document.getElementById('drawer-filter-form');
+  const form = document.getElementById('drawer-filter-form');
   if (!form) return;
-  var toggle = form.querySelector('#id_enabled');
-  var tokenHost = form.querySelector('#drawer-ownership-tokens');
-  var teamBoxes = function () { return form.querySelectorAll('[name="team_ids"]'); };
+  const toggle = form.querySelector('#id_enabled');
+  const tokenHost = form.querySelector('#drawer-ownership-tokens');
+  const teamBoxes = function () { return form.querySelectorAll('[name="team_ids"]'); };
 
   function syncOwnershipTokens() {
     if (!tokenHost) return;
     tokenHost.innerHTML = '';
 
-    var tokens = DotTokens.all();
+    const tokens = DotTokens.all();
 
     Object.keys(tokens).forEach(function (dotId) {
-      var token = tokens[dotId];
+      const token = tokens[dotId];
       if (!token) return;
-      var input = document.createElement('input');
+      const input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'ownership_token';
       input.value = token;

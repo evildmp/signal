@@ -1,23 +1,23 @@
 (function () {
   function getStoredOwnershipToken(form) {
-    var dotId = form.dataset.dotId || '';
+    const dotId = form.dataset.dotId || '';
     if (!dotId) return '';
     return DotTokens.get(dotId);
   }
 
   function wireSentimentPicker(form, picker) {
-    var freeTextName = picker.dataset.freeTextFor;
-    var freeTextInput = form.querySelector(
+    const freeTextName = picker.dataset.freeTextFor;
+    const freeTextInput = form.querySelector(
       'input[type="hidden"][name="' + freeTextName + '"]'
     );
-    var chipList = form.querySelector('[data-chip-list-for="' + freeTextName + '"]');
-    var chipInput = form.querySelector(
+    const chipList = form.querySelector('[data-chip-list-for="' + freeTextName + '"]');
+    const chipInput = form.querySelector(
       '[data-chip-input-for="' + freeTextName + '"]'
     );
-    var defaultPlaceholder = chipInput
+    const defaultPlaceholder = chipInput
       ? chipInput.getAttribute("placeholder") || ""
       : "";
-    var checkboxes = picker.querySelectorAll('input[type="checkbox"]');
+    const checkboxes = picker.querySelectorAll('input[type="checkbox"]');
 
     if (!freeTextInput || !chipList || !chipInput || !checkboxes.length) return;
 
@@ -39,18 +39,18 @@
     }
 
     function createChip(value, isPreset) {
-      var chip = document.createElement("span");
+      const chip = document.createElement("span");
       chip.className = "p-chip is-inline is-dense dot-editor-chip";
       chip.dataset.value = value;
       chip.dataset.preset = isPreset ? "1" : "0";
 
-      var remove = document.createElement("button");
+      const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "dot-editor-chip-remove";
       remove.setAttribute("aria-label", "Remove " + value);
       remove.textContent = "x";
 
-      var text = document.createElement("span");
+      const text = document.createElement("span");
       text.className = "p-chip__value dot-editor-chip-text";
       text.textContent = value;
 
@@ -64,18 +64,18 @@
     }
 
     function render() {
-      var values = getValues();
+      const values = getValues();
       chipList.innerHTML = "";
       values.forEach(function (value) {
-        var hasMatchingCheckbox = Array.from(checkboxes).some(function (checkbox) {
+        const hasMatchingCheckbox = Array.from(checkboxes).some(function (checkbox) {
           return checkbox.value === value;
         });
         createChip(value, hasMatchingCheckbox);
       });
 
       checkboxes.forEach(function (checkbox) {
-        var option = checkbox.closest(".dot-editor-sentiment-option");
-        var selected = hasValue(values, checkbox.value);
+        const option = checkbox.closest(".dot-editor-sentiment-option");
+        const selected = hasValue(values, checkbox.value);
         checkbox.checked = selected;
         if (option) {
           option.classList.toggle("is-selected", selected);
@@ -86,14 +86,14 @@
     }
 
     function setSingleValue(value) {
-      var trimmed = value.trim();
+      const trimmed = value.trim();
       if (!trimmed) return;
       setValues([trimmed]);
       render();
     }
 
     function removeValue(value) {
-      var values = getValues().filter(function (item) {
+      const values = getValues().filter(function (item) {
         return item !== value;
       });
       setValues(values);
@@ -136,25 +136,25 @@
     if (!form || form.dataset.dotEditorBound === "1") return;
     form.dataset.dotEditorBound = "1";
 
-    var privateCheckbox = form.querySelector('input[name="private"]');
-    var teamFieldName = form.dataset.teamFieldName || "team_ids";
-    var teamCheckboxes = form.querySelectorAll(
+    const privateCheckbox = form.querySelector('input[name="private"]');
+    const teamFieldName = form.dataset.teamFieldName || "team_ids";
+    const teamCheckboxes = form.querySelectorAll(
       'input[name="' + teamFieldName + '"]'
     );
-    var deleteButton = form.querySelector("[data-delete-dot]");
+    const deleteButton = form.querySelector("[data-delete-dot]");
 
     if (!privateCheckbox) return;
 
     function syncOwnershipToken() {
       if (!deleteButton) return;
-      var token = getStoredOwnershipToken(form);
-      var dialog = form.closest("#dot-editor-dialog");
-      var isOwnedByUser = dialog && dialog.dataset.dotOwnedByUser === "1";
+      const token = getStoredOwnershipToken(form);
+      const dialog = form.closest("#dot-editor-dialog");
+      const isOwnedByUser = dialog && dialog.dataset.dotOwnedByUser === "1";
       deleteButton.disabled = !token && !isOwnedByUser;
     }
 
     function syncPrivateFromTeams() {
-      var hasTeamSelection = Array.from(teamCheckboxes).some(function (checkbox) {
+      const hasTeamSelection = Array.from(teamCheckboxes).some(function (checkbox) {
         return checkbox.checked;
       });
       privateCheckbox.checked = !hasTeamSelection;
@@ -190,7 +190,7 @@
 
   document.addEventListener("htmx:afterSwap", function (e) {
     if (!e.detail.target || e.detail.target.id !== "dot-editor-host") return;
-    var form = e.detail.target.querySelector("#dot-editor-form");
+    const form = e.detail.target.querySelector("#dot-editor-form");
     initDotEditorForm(form);
   });
 })();

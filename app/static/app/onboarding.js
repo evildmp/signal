@@ -1,7 +1,7 @@
 (function () {
-  var onboardingDialog = document.getElementById('signal-onboarding-dialog');
-  var onboardingContinue = document.getElementById('signal-onboarding-continue');
-  var onboardingOpen = document.getElementById('signal-onboarding-open');
+  const onboardingDialog = document.getElementById('signal-onboarding-dialog');
+  const onboardingContinue = document.getElementById('signal-onboarding-continue');
+  const onboardingOpen = document.getElementById('signal-onboarding-open');
 
   if (!onboardingDialog) return;
 
@@ -20,7 +20,7 @@
 
   if (onboardingContinue) {
     onboardingContinue.addEventListener('click', function () {
-      var dismissUrl = onboardingDialog.dataset.dismissUrl;
+      const dismissUrl = onboardingDialog.dataset.dismissUrl;
       if (dismissUrl) {
         htmx.ajax('POST', dismissUrl, {
           swap: 'none',

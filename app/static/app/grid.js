@@ -1,10 +1,10 @@
 (function () {
-  var grid = document.getElementById('signal-grid');
+  const grid = document.getElementById('signal-grid');
   if (!grid) return;
 
-  var suppressNextGridClick = false;
-  var dragState = null;
-  var gridPointerGesture = null;
+  let suppressNextGridClick = false;
+  let dragState = null;
+  let gridPointerGesture = null;
 
   function suppressGridClickAfterPointerUp() {
     suppressNextGridClick = true;
@@ -14,25 +14,25 @@
   }
 
   function thresholdFromData(attributeName, fallback) {
-    var raw = grid.dataset[attributeName];
-    var parsed = parseFloat(raw);
+    const raw = grid.dataset[attributeName];
+    const parsed = parseFloat(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
   }
 
-  var labelLeftEdgeThreshold = thresholdFromData('labelLeftEdgeThreshold', 20);
-  var labelRightEdgeThreshold = thresholdFromData('labelRightEdgeThreshold', 80);
-  var labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
+  const labelLeftEdgeThreshold = thresholdFromData('labelLeftEdgeThreshold', 20);
+  const labelRightEdgeThreshold = thresholdFromData('labelRightEdgeThreshold', 80);
+  const labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
 
   function ownershipTokenForDot(dot, tokens) {
-    var id = dot.dataset.dotId;
+    const id = dot.dataset.dotId;
     return tokens[id] || '';
   }
 
   function updateClaimedDotClasses() {
-    var tokens = DotTokens.all();
+    const tokens = DotTokens.all();
     document.querySelectorAll('.signal-dot').forEach(function (dot) {
-      var isOwnedByUser = dot.dataset.ownedByUser === '1';
-      var hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
+      const isOwnedByUser = dot.dataset.ownedByUser === '1';
+      const hasOwnershipToken = !!ownershipTokenForDot(dot, tokens);
       if (isOwnedByUser || hasOwnershipToken) {
         dot.classList.add('signal-dot--claimed');
       } else {
@@ -42,7 +42,7 @@
   }
 
   function ownershipTokenForDotId(dotId) {
-    var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+    const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
     if (!dot) return '';
     return ownershipTokenForDot(dot, DotTokens.all());
   }
@@ -65,10 +65,10 @@
   document.body.addEventListener('htmx:configRequest', function (e) {
     if (!e.detail || !e.detail.path) return;
 
-    var match = e.detail.path.match(/^\/dot\/(\d+)\//);
+    const match = e.detail.path.match(/^\/dot\/(\d+)\//);
     if (!match) return;
 
-    var token = DotTokens.get(match[1]);
+    const token = DotTokens.get(match[1]);
     if (token) {
       e.detail.headers = e.detail.headers || {};
       e.detail.headers['X-Ownership-Token'] = token;
@@ -80,9 +80,9 @@
   }
 
   function gridPercentFromPointer(clientX, clientY) {
-    var rect = grid.getBoundingClientRect();
-    var x = (clientX - rect.left) / rect.width * 100;
-    var y = 100 - (clientY - rect.top) / rect.height * 100;
+    const rect = grid.getBoundingClientRect();
+    const x = (clientX - rect.left) / rect.width * 100;
+    const y = 100 - (clientY - rect.top) / rect.height * 100;
     return {
       x: clampPercent(x),
       y: clampPercent(y)
@@ -90,8 +90,8 @@
   }
 
   function labelPositionClass(x, y) {
-    var labelY = y > labelTopEdgeThreshold ? 'below' : 'above';
-    var labelX = 'center';
+    let labelY = y > labelTopEdgeThreshold ? 'below' : 'above';
+    let labelX = 'center';
     if (x < labelLeftEdgeThreshold) {
       labelX = 'right';
     } else if (x > labelRightEdgeThreshold) {
@@ -131,12 +131,12 @@
     document.removeEventListener('mousemove', onDragMove);
     document.removeEventListener('mouseup', onDragEnd);
 
-    var finishedDrag = dragState;
+    const finishedDrag = dragState;
     dragState = null;
 
     if (!finishedDrag.didMove || !finishedDrag.lastPosition) return;
 
-    var snappedPosition = {
+    const snappedPosition = {
       x: Math.round(finishedDrag.lastPosition.x),
       y: Math.round(finishedDrag.lastPosition.y)
     };
@@ -163,7 +163,7 @@
       dragState.didMove = true;
     }
 
-    var position = gridPercentFromPointer(e.clientX, e.clientY);
+    const position = gridPercentFromPointer(e.clientX, e.clientY);
     dragState.lastPosition = position;
     dragState.dot.style.setProperty('--dot-x', position.x.toFixed(2));
     dragState.dot.style.setProperty('--dot-y', position.y.toFixed(2));
@@ -188,7 +188,7 @@
     document.removeEventListener('mousemove', onGridPointerMove);
     document.removeEventListener('mouseup', onGridPointerUp);
 
-    var finishedGesture = gridPointerGesture;
+    const finishedGesture = gridPointerGesture;
     gridPointerGesture = null;
 
     if (finishedGesture.didMove) {
@@ -216,15 +216,15 @@
   grid.addEventListener('mousedown', function (e) {
     clearTransientDotLabels();
 
-    var dot = e.target.closest('.signal-dot');
+    const dot = e.target.closest('.signal-dot');
 
     if (!dot) {
       beginGridPointerGesture(e);
       return;
     }
 
-    var ownershipToken = ownershipTokenForDotId(dot.dataset.dotId);
-    var isOwnedByUser = dot.dataset.ownedByUser === '1';
+    const ownershipToken = ownershipTokenForDotId(dot.dataset.dotId);
+    const isOwnedByUser = dot.dataset.ownedByUser === '1';
     if (!ownershipToken && !isOwnedByUser) {
       beginGridPointerGesture(e);
       return;
@@ -246,9 +246,9 @@
   grid.addEventListener('click', function (e) {
     if (suppressNextGridClick) return;
     if (e.target.closest('.signal-dot, .signal-axis')) return;
-    var position = gridPercentFromPointer(e.clientX, e.clientY);
-    var x = Math.round(position.x);
-    var y = Math.round(position.y);
+    const position = gridPercentFromPointer(e.clientX, e.clientY);
+    const x = Math.round(position.x);
+    const y = Math.round(position.y);
 
     htmx.ajax('POST', grid.dataset.createUrl, {
       target: grid,
@@ -267,10 +267,10 @@
 
   document.body.addEventListener('htmx:afterSwap', function (e) {
     if (e.detail.target && e.detail.target.id === 'dot-editor-host') {
-      var dialog = e.detail.target.querySelector('dialog');
+      const dialog = e.detail.target.querySelector('dialog');
       if (dialog && !dialog.open) {
         dialog.showModal();
-        var focusTarget = dialog.querySelector(
+        const focusTarget = dialog.querySelector(
           '[autofocus], input:not([type="hidden"]):not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
         );
         if (focusTarget) {
@@ -285,7 +285,7 @@
   document.body.addEventListener('dotClaimed', function (e) {
     if (e.detail) {
       DotTokens.set(String(e.detail.dotId), e.detail.token);
-      var dot = document.querySelector('.signal-dot[data-dot-id="' + e.detail.dotId + '"]');
+      const dot = document.querySelector('.signal-dot[data-dot-id="' + e.detail.dotId + '"]');
       if (dot) {
         dot.dataset.ownedByUser = '1';
       }
@@ -295,13 +295,13 @@
   document.body.addEventListener('dotDeleted', function (e) {
     if (!e.detail || !e.detail.dotId) return;
 
-    var dotId = String(e.detail.dotId);
-    var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+    const dotId = String(e.detail.dotId);
+    const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
     if (dot) {
       dot.remove();
     }
 
-    var label = labelForDotId(dotId);
+    const label = labelForDotId(dotId);
     if (label) {
       label.remove();
     }
@@ -312,8 +312,8 @@
   document.body.addEventListener('dotUpdated', function (e) {
     if (!e.detail || !e.detail.dotId) return;
 
-    var dotId = String(e.detail.dotId);
-    var dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
+    const dotId = String(e.detail.dotId);
+    const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
     if (!dot) return;
 
     dot.dataset.ownedByUser = e.detail.ownedByUser ? '1' : '0';
@@ -321,24 +321,24 @@
 
     if (e.detail.notificationHtml && grid) {
       clearTransientDotLabels();
-      var container = document.createElement('div');
+      const container = document.createElement('div');
       container.innerHTML = e.detail.notificationHtml.trim();
-      var transientLabel = container.firstElementChild;
+      const transientLabel = container.firstElementChild;
       if (transientLabel) {
         grid.appendChild(transientLabel);
       }
     }
 
-    var existing = labelForDotId(dotId);
+    const existing = labelForDotId(dotId);
     if (existing) {
       existing.remove();
     }
 
     if (!e.detail.publishedLabelHtml) return;
 
-    var wrapper = document.createElement('div');
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = e.detail.publishedLabelHtml.trim();
-    var label = wrapper.firstElementChild;
+    const label = wrapper.firstElementChild;
     if (label) {
       dot.insertAdjacentElement('afterend', label);
     }

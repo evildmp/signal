@@ -1,5 +1,5 @@
-var DotTokens = (function () {
-  var KEY = 'dotTokens';
+window.DotTokens = (function () {
+  const KEY = 'dotTokens';
 
   function load() {
     try {
@@ -21,12 +21,12 @@ var DotTokens = (function () {
       return load()[String(id)] || '';
     },
     set: function (id, token) {
-      var tokens = load();
+      const tokens = load();
       tokens[String(id)] = token;
       save(tokens);
     },
     remove: function (id) {
-      var tokens = load();
+      const tokens = load();
       delete tokens[String(id)];
       save(tokens);
     }
