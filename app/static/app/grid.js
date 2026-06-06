@@ -15,16 +15,6 @@
     }
   }
 
-  function thresholdFromData(attributeName, fallback) {
-    const raw = grid.dataset[attributeName];
-    const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-
-  const labelLeftEdgeThreshold = thresholdFromData('labelLeftEdgeThreshold', 20);
-  const labelRightEdgeThreshold = thresholdFromData('labelRightEdgeThreshold', 80);
-  const labelTopEdgeThreshold = thresholdFromData('labelTopEdgeThreshold', 80);
-
   function ownershipTokenForDot(dot, tokens) {
     const id = dot.dataset.dotId;
     return tokens[id] || '';
@@ -122,19 +112,9 @@
   }
 
   function labelPositionClass(x, y) {
-    let labelY = y > labelTopEdgeThreshold ? 'below' : 'above';
-    let labelX = 'center';
-    if (x < labelLeftEdgeThreshold) {
-      labelX = 'right';
-    } else if (x > labelRightEdgeThreshold) {
-      labelX = 'left';
-    }
-
-    if (labelX !== 'center') {
-      labelY = 'side';
-    }
-
-    return 'signal-dot-label--' + labelY + ' signal-dot-label--x-' + labelX;
+    const labelY = y > 50 ? 'bottom' : 'top';
+    const labelX = x >= 50 ? 'left' : 'right';
+    return 'signal-dot-label--' + labelY + '-' + labelX;
   }
 
   function labelForDotId(dotId) {
@@ -146,12 +126,10 @@
     label.style.setProperty('--dot-x', String(x));
     label.style.setProperty('--dot-y', String(y));
     label.classList.remove(
-      'signal-dot-label--above',
-      'signal-dot-label--below',
-      'signal-dot-label--side',
-      'signal-dot-label--x-left',
-      'signal-dot-label--x-right',
-      'signal-dot-label--x-center'
+      'signal-dot-label--top-left',
+      'signal-dot-label--top-right',
+      'signal-dot-label--bottom-left',
+      'signal-dot-label--bottom-right'
     );
     labelPositionClass(x, y).split(' ').forEach(function (klass) {
       label.classList.add(klass);

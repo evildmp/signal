@@ -15,9 +15,6 @@ from uuid import UUID
 from app.forms import DotEditorForm, DrawerFilterForm
 from app.models import Dot, Team, SignalOnboardingState
 
-LABEL_LEFT_EDGE_THRESHOLD = 20
-LABEL_RIGHT_EDGE_THRESHOLD = 80
-LABEL_TOP_EDGE_THRESHOLD = 80
 DOT_VISIBILITY_WINDOW = timedelta(days=14)
 
 
@@ -80,18 +77,9 @@ def user_can_see_dot(request, dot):
 
 
 def build_dot_label_position_class_from_coordinates(x, y):
-    label_y = "below" if y > LABEL_TOP_EDGE_THRESHOLD else "above"
-    if x < LABEL_LEFT_EDGE_THRESHOLD:
-        label_x = "right"
-    elif x > LABEL_RIGHT_EDGE_THRESHOLD:
-        label_x = "left"
-    else:
-        label_x = "center"
-
-    if label_x != "center":
-        label_y = "side"
-
-    return f"signal-dot-label--{label_y} signal-dot-label--x-{label_x}"
+    label_y = "bottom" if y > 50 else "top"
+    label_x = "left" if x >= 50 else "right"
+    return f"signal-dot-label--{label_y}-{label_x}"
 
 
 def build_dot_label_position_class(dot):
@@ -350,9 +338,6 @@ def home(request):
             "team_field_name": drawer_filter_form["team_ids"].html_name,
             "dots": dots,
             "show_signal_onboarding": show_signal_onboarding,
-            "label_left_edge_threshold": LABEL_LEFT_EDGE_THRESHOLD,
-            "label_right_edge_threshold": LABEL_RIGHT_EDGE_THRESHOLD,
-            "label_top_edge_threshold": LABEL_TOP_EDGE_THRESHOLD,
         },
     )
 

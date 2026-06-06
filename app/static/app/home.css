@@ -208,29 +208,24 @@ body.signal-dragging * {
   opacity: 1;
 }
 
-/* Default: above, horizontally centered */
-.signal-dot-label--above {
-  transform: translate(-50%, -0.375rem);
+/* Dot is below centre, left of centre */
+.signal-dot-label--top-right {
+  transform: translate(0.55rem, -0.375rem);
 }
 
-/* Near top: below */
-.signal-dot-label--below {
-  transform: translate(-50%, calc(100% + 0.5rem));
+/* Dot is below centre, right of centre */
+.signal-dot-label--top-left {
+  transform: translate(calc(-100% - 0.55rem), -0.375rem);
 }
 
-/* Side placement: vertically centered */
-.signal-dot-label--side {
-  transform: translate(-50%, -50%);
+/* Dot is above centre, left of centre */
+.signal-dot-label--bottom-right {
+  transform: translate(0.55rem, calc(100% + 0.5rem));
 }
 
-/* Near right edge: to the left of the dot */
-.signal-dot-label--x-left {
-  transform: translate(calc(-100% - 0.55rem), -50%);
-}
-
-/* Near left edge: to the right of the dot */
-.signal-dot-label--x-right {
-  transform: translate(0.55rem, -50%);
+/* Dot is above centre, right of centre */
+.signal-dot-label--bottom-left {
+  transform: translate(calc(-100% - 0.55rem), calc(100% + 0.5rem));
 }
 
 .signal-dot-label .team-names {

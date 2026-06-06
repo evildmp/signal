@@ -237,7 +237,7 @@ def test_clicking_grid_places_a_dot_and_shows_notification(
 
     # Label near top-left should go to the right of the dot
     class_attr = label.get_attribute("class")
-    assert "signal-dot-label--x-right" in class_attr
+    assert "signal-dot-label--bottom-right" in class_attr
 
 
 @pytest.mark.django_db(transaction=True)
@@ -373,7 +373,7 @@ def test_label_positions_near_edges(authenticated_page):
     label = authenticated_page.locator(".signal-dot-label").last
     expect(label).to_be_visible()
     class_attr = label.get_attribute("class")
-    assert "signal-dot-label--x-left" in class_attr
+    assert "signal-dot-label--top-left" in class_attr
 
 
 @pytest.mark.django_db(transaction=True)
