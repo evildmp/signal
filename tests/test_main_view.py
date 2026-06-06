@@ -337,7 +337,7 @@ def test_main_view_marks_owner_related_dot_as_claimed_without_token(
     assert response.status_code == 200
     content = response.content.decode()
     match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{dot.id}"',
         content,
     )
     assert match is not None
@@ -369,15 +369,15 @@ def test_main_view_claimed_class_uses_owner_relation_or_ownership_token(
     content = response.content.decode()
 
     relation_match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{relation_owned_dot.id}"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{relation_owned_dot.id}"',
         content,
     )
     token_match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{token_owned_dot.id}"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{token_owned_dot.id}"',
         content,
     )
     unowned_match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{unowned_dot.id}"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{unowned_dot.id}"',
         content,
     )
 
@@ -404,7 +404,7 @@ def test_my_dots_only_renders_owned_dot_with_owned_by_user_flag(
     assert response.status_code == 200
     content = response.content.decode()
     match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"\s+data-owned-by-user="([^"]*)"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{dot.id}"\s+data-owned-by-user="([^"]*)"',
         content,
     )
     assert match is not None
@@ -425,7 +425,7 @@ def test_my_dots_only_renders_owned_dot_as_claimed(
     assert response.status_code == 200
     content = response.content.decode()
     match = re.search(
-        rf'<span\s+class="([^"]*)"\s+data-dot-id="{dot.id}"',
+        rf'<span\s+[^>]*class="([^"]*)"\s+data-dot-id="{dot.id}"',
         content,
     )
     assert match is not None

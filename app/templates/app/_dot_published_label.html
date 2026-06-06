@@ -1,5 +1,6 @@
 {% if dot.published_label_parts %}
 <span
+  id="signal-dot-published-label-{{ dot.id }}"
   class="signal-dot-published-label {{ dot.published_label_class }}"
   data-dot-id="{{ dot.id }}"
   style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};"

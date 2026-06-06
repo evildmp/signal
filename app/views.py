@@ -452,7 +452,12 @@ def delete_dot(request, dot_id):
 
     dot.delete()
 
-    response = HttpResponse("")
+    oob_span = f'<span id="signal-dot-{dot_id}" hx-swap-oob="delete"></span>'
+    oob_label = (
+        f'<span id="signal-dot-published-label-{dot_id}"'
+        f' hx-swap-oob="delete"></span>'
+    )
+    response = HttpResponse(oob_span + oob_label)
     response["HX-Trigger"] = json.dumps({"dotDeleted": {"dotId": dot_id}})
     return response
 

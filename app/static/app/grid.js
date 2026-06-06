@@ -398,19 +398,7 @@
 
   document.body.addEventListener('dotDeleted', function (e) {
     if (!e.detail || !e.detail.dotId) return;
-
-    const dotId = String(e.detail.dotId);
-    const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
-    if (dot) {
-      dot.remove();
-    }
-
-    const label = labelForDotId(dotId);
-    if (label) {
-      label.remove();
-    }
-
-    DotTokens.remove(dotId);
+    DotTokens.remove(String(e.detail.dotId));
   });
 
   document.body.addEventListener('dotUpdated', function (e) {

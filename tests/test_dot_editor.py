@@ -516,7 +516,11 @@ def test_dot_delete_endpoint_deletes_owned_dot(
     )
 
     assert response.status_code == 200
-    assert response.content == b""
+    hx_trigger = json.loads(response["HX-Trigger"])
+    assert hx_trigger == {"dotDeleted": {"dotId": dot.id}}
+    content = response.content.decode()
+    assert f'id="signal-dot-{dot.id}"' in content
+    assert 'hx-swap-oob="delete"' in content
     assert not Dot.objects.filter(id=dot.id).exists()
 
 
@@ -553,7 +557,11 @@ def test_dot_delete_endpoint_allows_user_with_owner_relation_without_ownership_t
     )
 
     assert response.status_code == 200
-    assert response.content == b""
+    hx_trigger = json.loads(response["HX-Trigger"])
+    assert hx_trigger == {"dotDeleted": {"dotId": dot.id}}
+    content = response.content.decode()
+    assert f'id="signal-dot-{dot.id}"' in content
+    assert 'hx-swap-oob="delete"' in content
     assert not Dot.objects.filter(id=dot.id).exists()
 
 
