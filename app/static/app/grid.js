@@ -44,9 +44,7 @@
   }
 
   function ownershipTokenForDotId(dotId) {
-    const dot = document.querySelector('.signal-dot[data-dot-id="' + dotId + '"]');
-    if (!dot) return '';
-    return ownershipTokenForDot(dot, DotTokens.all());
+    return DotTokens.get(dotId);
   }
 
   // Initial mark — uses localStorage presence only; verification fetch below
