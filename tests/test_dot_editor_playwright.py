@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from playwright.sync_api import expect
 from django.contrib.auth import get_user_model
@@ -59,6 +61,9 @@ def test_valid_claim_token_grants_ownership_token_and_opens_editor(
     claim_dialog.get_by_role("button", name="Claim").click()
 
     expect(page.locator("dialog#dot-editor-dialog")).to_be_visible()
+    expect(page.locator(f'.signal-dot[data-dot-id="{dot.id}"]')).to_have_attribute(
+        "class", re.compile(r"\bsignal-dot--claimed\b")
+    )
     stored_token = page.evaluate(
         "dotId => JSON.parse(localStorage.getItem('dotTokens') || '{}')[String(dotId)]",
         str(dot.id),

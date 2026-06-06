@@ -96,11 +96,6 @@
       .catch(function () { /* network failure — leave current state intact */ });
   }());
 
-  // After new dot claim
-  document.body.addEventListener('dotClaimed', function () {
-    setTimeout(updateClaimedDotClasses, 0);
-  });
-
   // After grid redraw (e.g. filter change)
   document.body.addEventListener('htmx:afterSwap', function (e) {
     if (e.detail.target && e.detail.target.id === 'signal-grid') {
@@ -393,6 +388,7 @@
       if (dot) {
         dot.dataset.ownedByUser = '1';
       }
+      setTimeout(updateClaimedDotClasses, 0);
     }
   });
 
