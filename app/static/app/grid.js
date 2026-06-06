@@ -268,6 +268,7 @@
   grid.addEventListener('pointerdown', function (e) {
     if (e.button !== 0 || !e.isPrimary) return;
 
+    lastCompletedGesture = null;
     clearTransientDotLabels();
 
     const dot = e.target.closest('.signal-dot');
