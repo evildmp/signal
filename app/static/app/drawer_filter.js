@@ -4,7 +4,7 @@
   const actionInput = form.querySelector('input[name="action"]');
   const tokenHost = form.querySelector('#drawer-ownership-tokens');
 
-  function syncOwnershipTokens() {
+  function syncAllOwnershipTokenInputs() {
     if (!tokenHost) return;
     tokenHost.innerHTML = '';
 
@@ -21,7 +21,7 @@
     });
   }
 
-  syncOwnershipTokens();
+  syncAllOwnershipTokenInputs();
 
   // Use capture phase so ownership-token inputs exist before HTMX serialises.
   form.addEventListener('change', function (e) {
@@ -32,6 +32,6 @@
         actionInput.value = 'set_team_filters';
       }
     }
-    syncOwnershipTokens();
+    syncAllOwnershipTokenInputs();
   }, true);
 })();

@@ -1,5 +1,5 @@
 (function () {
-  function getStoredOwnershipToken(form) {
+  function getEditorFormOwnershipToken(form) {
     const dotId = form.dataset.dotId || '';
     if (!dotId) return '';
     return DotTokens.get(dotId);
@@ -162,9 +162,9 @@
       });
     }
 
-    function syncOwnershipToken() {
+    function syncDeleteButtonState() {
       if (!deleteButton) return;
-      const token = getStoredOwnershipToken(form);
+      const token = getEditorFormOwnershipToken(form);
       const dialog = form.closest("#dot-editor-dialog");
       const isOwnedByUser = dialog && dialog.dataset.dotOwnedByUser === "1";
       deleteButton.disabled = !token && !isOwnedByUser;
@@ -197,12 +197,12 @@
       });
 
     form.addEventListener("submit", function () {
-      syncOwnershipToken();
+      syncDeleteButtonState();
       syncPrivateFromTeams();
       clearTeamsWhenPrivateChecked();
     });
 
-    syncOwnershipToken();
+    syncDeleteButtonState();
   }
 
   document.addEventListener("htmx:afterSwap", function (e) {
