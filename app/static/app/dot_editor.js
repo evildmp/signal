@@ -154,6 +154,14 @@
 
     if (!privateCheckbox) return;
 
+    const cancelButton = form.querySelector(".dialog-cancel");
+    if (cancelButton) {
+      cancelButton.addEventListener("click", function () {
+        const dialog = form.closest("dialog");
+        if (dialog) dialog.close();
+      });
+    }
+
     function syncOwnershipToken() {
       if (!deleteButton) return;
       const token = getStoredOwnershipToken(form);
