@@ -284,7 +284,7 @@
   }
 
   function clearTransientDotLabels() {
-    document.querySelectorAll('.signal-dot-label').forEach(function (label) {
+    document.querySelectorAll('.signal-dot-notification').forEach(function (label) {
       label.remove();
     });
   }
