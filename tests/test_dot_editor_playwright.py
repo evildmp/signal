@@ -479,3 +479,48 @@ def test_saving_dot_shows_transient_published_notification(
     expect(transient_label).to_be_visible()
     expect(transient_label).to_contain_text("Published to")
     expect(transient_label).to_contain_text(f"Claim token: {dot.claim_token}")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sentiment_picker_chip_creation_and_removal(
+    page, login_jerry, jerry_with_explicit_teams, minimum_team_hierarchy
+):
+    dot = Dot.objects.create(x=50, y=50, owner_user=jerry_with_explicit_teams)
+    dot.teams.add(minimum_team_hierarchy["blue"])
+
+    login_jerry(page)
+
+    page.locator(f'.signal-dot[data-dot-id="{dot.id}"]').click()
+    dialog = page.locator("dialog#dot-editor-dialog")
+    expect(dialog).to_be_visible()
+
+    # Checkbox selection creates a single chip
+    dialog.get_by_text("cheerful", exact=True).click()
+    chip = dialog.locator('.dot-editor-chip[data-value="cheerful"]')
+    expect(chip).to_be_visible()
+    expect(chip).to_have_attribute("data-preset", "1")
+
+    # Free-text input via Enter replaces the checkbox value
+    chip_input = dialog.locator('[data-chip-input-for="feeling_free_text"]')
+    chip_input.fill("elated")
+    chip_input.press("Enter")
+    free_chip = dialog.locator('.dot-editor-chip[data-value="elated"]')
+    expect(free_chip).to_be_visible()
+    expect(free_chip).to_have_attribute("data-preset", "0")
+    expect(dialog.locator('.dot-editor-chip[data-value="cheerful"]')).to_have_count(0)
+
+    # Remove the free-text chip
+    free_chip.locator(".dot-editor-chip-remove").click()
+    expect(dialog.locator('.dot-editor-chip[data-value="elated"]')).to_have_count(0)
+
+    # Re-select checkbox after removal
+    dialog.get_by_text("cheerful", exact=True).click()
+    expect(dialog.locator('.dot-editor-chip[data-value="cheerful"]')).to_be_visible()
+
+    # Save and verify server-side state
+    dialog.get_by_role("button", name="Save").click()
+    expect(page.locator("dialog#dot-editor-dialog")).to_have_count(0)
+
+    dot.refresh_from_db()
+    assert dot.feeling == ["cheerful"]
+

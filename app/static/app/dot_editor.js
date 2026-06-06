@@ -5,22 +5,7 @@
     return DotTokens.get(dotId);
   }
 
-  function wireSentimentPicker(form, picker) {
-    const freeTextName = picker.dataset.freeTextFor;
-    const freeTextInput = form.querySelector(
-      'input[type="hidden"][name="' + freeTextName + '"]'
-    );
-    const chipList = form.querySelector('[data-chip-list-for="' + freeTextName + '"]');
-    const chipInput = form.querySelector(
-      '[data-chip-input-for="' + freeTextName + '"]'
-    );
-    const defaultPlaceholder = chipInput
-      ? chipInput.getAttribute("placeholder") || ""
-      : "";
-    const checkboxes = picker.querySelectorAll('input[type="checkbox"]');
-
-    if (!freeTextInput || !chipList || !chipInput || !checkboxes.length) return;
-
+  function createChipList(freeTextInput, chipListElement, chipInput, checkboxes, defaultPlaceholder) {
     function getValues() {
       return freeTextInput.value
         .split(",")
@@ -38,7 +23,7 @@
       return values.indexOf(value) >= 0;
     }
 
-    function createChip(value, isPreset) {
+    function buildChip(value, isPreset) {
       const chip = document.createElement("span");
       chip.className = "p-chip is-inline is-dense dot-editor-chip";
       chip.dataset.value = value;
@@ -55,22 +40,22 @@
       text.textContent = value;
 
       remove.addEventListener("click", function () {
-        removeValue(value);
+        self.remove(value);
       });
 
       chip.appendChild(remove);
       chip.appendChild(text);
-      chipList.appendChild(chip);
+      return chip;
     }
 
     function render() {
       const values = getValues();
-      chipList.innerHTML = "";
+      chipListElement.innerHTML = "";
       values.forEach(function (value) {
         const hasMatchingCheckbox = Array.from(checkboxes).some(function (checkbox) {
           return checkbox.value === value;
         });
-        createChip(value, hasMatchingCheckbox);
+        chipListElement.appendChild(buildChip(value, hasMatchingCheckbox));
       });
 
       checkboxes.forEach(function (checkbox) {
@@ -85,27 +70,57 @@
       chipInput.setAttribute("placeholder", values.length ? "" : defaultPlaceholder);
     }
 
-    function setSingleValue(value) {
-      const trimmed = value.trim();
-      if (!trimmed) return;
-      setValues([trimmed]);
-      render();
-    }
+    const self = {
+      add: function (value) {
+        const trimmed = value.trim();
+        if (!trimmed) return;
+        setValues([trimmed]);
+        render();
+      },
+      remove: function (value) {
+        const values = getValues().filter(function (item) {
+          return item !== value;
+        });
+        setValues(values);
+        render();
+      },
+      init: function () {
+        checkboxes.forEach(function (checkbox) {
+          if (checkbox.checked) {
+            self.add(checkbox.value);
+          }
+        });
+        render();
+      }
+    };
 
-    function removeValue(value) {
-      const values = getValues().filter(function (item) {
-        return item !== value;
-      });
-      setValues(values);
-      render();
-    }
+    return self;
+  }
+
+  function wireSentimentPicker(form, picker) {
+    const freeTextName = picker.dataset.freeTextFor;
+    const freeTextInput = form.querySelector(
+      'input[type="hidden"][name="' + freeTextName + '"]'
+    );
+    const chipListElement = form.querySelector('[data-chip-list-for="' + freeTextName + '"]');
+    const chipInput = form.querySelector(
+      '[data-chip-input-for="' + freeTextName + '"]'
+    );
+    const defaultPlaceholder = chipInput
+      ? chipInput.getAttribute("placeholder") || ""
+      : "";
+    const checkboxes = picker.querySelectorAll('input[type="checkbox"]');
+
+    if (!freeTextInput || !chipListElement || !chipInput || !checkboxes.length) return;
+
+    const chipList = createChipList(freeTextInput, chipListElement, chipInput, checkboxes, defaultPlaceholder);
 
     checkboxes.forEach(function (checkbox) {
       checkbox.addEventListener("change", function () {
         if (checkbox.checked) {
-          setSingleValue(checkbox.value);
+          chipList.add(checkbox.value);
         } else {
-          removeValue(checkbox.value);
+          chipList.remove(checkbox.value);
         }
       });
     });
@@ -113,23 +128,17 @@
     chipInput.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== ",") return;
       event.preventDefault();
-      setSingleValue(chipInput.value);
+      chipList.add(chipInput.value);
       chipInput.value = "";
     });
 
     chipInput.addEventListener("blur", function () {
       if (!chipInput.value.trim()) return;
-      setSingleValue(chipInput.value);
+      chipList.add(chipInput.value);
       chipInput.value = "";
     });
 
-    checkboxes.forEach(function (checkbox) {
-      if (checkbox.checked) {
-        setSingleValue(checkbox.value);
-      }
-    });
-
-    render();
+    chipList.init();
   }
 
   function initDotEditorForm(form) {
