@@ -3,7 +3,7 @@
   id="signal-dot-published-label-{{ dot.id }}"
   class="signal-dot-published-label {{ dot.published_label_class }}"
   data-dot-id="{{ dot.id }}"
-  style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }};"
+  style="--dot-x: {{ dot.x }}; --dot-y: {{ dot.y }}; --dot-z: {{ dot.z_index|default:0 }};"
 >
   {% if dot.published_label_groups.username %}
     <span class="signal-dot-published-username">{{ dot.published_label_groups.username }}</span>

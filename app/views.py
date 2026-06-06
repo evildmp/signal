@@ -100,10 +100,15 @@ def build_dot_unclaimed_colour(request, dot):
     return f"hsl({hue:.1f}, {saturation:.1f}%, {lightness:.1f}%)"
 
 
+def compute_dot_z_index(dot, user):
+    return 100 if dot.owner_user_id == user.id else 0
+
+
 def build_dot_style(request, dot):
     return (
         f"--dot-x: {dot.x}; --dot-y: {dot.y}; "
         f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)};"
+        f"--dot-z: {dot.z_index};"
     )
 
 
@@ -209,6 +214,7 @@ def build_dot_updated_payload(request, dot):
     dot.published_label_parts = build_published_label_parts(dot)
     dot.published_label_groups = build_published_label_groups(dot)
     dot.published_label_class = build_dot_label_position_class(dot)
+    dot.z_index = compute_dot_z_index(dot, request.user)
     return {
         "dotId": dot.id,
         "ownedByUser": user_can_manage_dot(
@@ -316,6 +322,7 @@ def home(request):
             dot.owner_user_id == request.user.id
             or dot.ownership_token in ownership_tokens
         )
+        dot.z_index = compute_dot_z_index(dot, request.user)
         dot.published_label_groups = build_published_label_groups(dot)
         dot.published_label_parts = build_published_label_parts(dot)
         dot.published_label_class = build_dot_label_position_class(dot)
@@ -374,6 +381,7 @@ def create_dot(request):
 
     now = timezone.now()
     dot.is_owned_by_user = True
+    dot.z_index = compute_dot_z_index(dot, request.user)
     dot.published_label_class = build_dot_label_position_class(dot)
     dot.display_style = build_dot_style(request, dot)
     dot_html = render_to_string(
