@@ -67,7 +67,6 @@
             <dialog
               id="signal-onboarding-dialog"
               aria-label="Using Signal"
-              data-dismiss-url="{% url 'dismiss_signal_onboarding' %}"
               data-show-on-load="{% if show_signal_onboarding %}1{% else %}0{% endif %}"
             >
               <article class="p-card">
@@ -89,7 +88,10 @@
                   If you are concerned by the text published alongside a dot, flag it for review.
                 </p>
                 <div class="u-align--right">
-                  <button type="button" class="p-button--positive" id="signal-onboarding-continue">Continue</button>
+                  <form hx-post="{% url 'dismiss_signal_onboarding' %}" hx-swap="none" id="signal-onboarding-dismiss-form">
+                    {% csrf_token %}
+                    <button type="submit" class="p-button--positive" id="signal-onboarding-continue">Continue</button>
+                  </form>
                 </div>
               </article>
             </dialog>

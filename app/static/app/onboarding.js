@@ -1,6 +1,5 @@
 (function () {
   const onboardingDialog = document.getElementById('signal-onboarding-dialog');
-  const onboardingContinue = document.getElementById('signal-onboarding-continue');
   const onboardingOpen = document.getElementById('signal-onboarding-open');
 
   if (!onboardingDialog) return;
@@ -18,17 +17,9 @@
     });
   }
 
-  if (onboardingContinue) {
-    onboardingContinue.addEventListener('click', function () {
-      const dismissUrl = onboardingDialog.dataset.dismissUrl;
-      if (dismissUrl) {
-        htmx.ajax('POST', dismissUrl, {
-          swap: 'none',
-          headers: {
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-          }
-        });
-      }
+  const dismissForm = document.getElementById('signal-onboarding-dismiss-form');
+  if (dismissForm) {
+    dismissForm.addEventListener('submit', function () {
       onboardingDialog.close();
     });
   }
