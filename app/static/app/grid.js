@@ -2,7 +2,7 @@
   const grid = document.getElementById('signal-grid');
   if (!grid) return;
 
-  let suppressNextGridClick = false;
+  let lastCompletedGesture = null;
   let dragState = null;
   let gridPointerGesture = null;
   const dragSelectionClass = 'signal-dragging';
@@ -13,13 +13,6 @@
     } else {
       document.body.classList.remove(dragSelectionClass);
     }
-  }
-
-  function suppressGridClickAfterPointerUp() {
-    suppressNextGridClick = true;
-    setTimeout(function () {
-      suppressNextGridClick = false;
-    }, 0);
   }
 
   function thresholdFromData(attributeName, fallback) {
@@ -196,7 +189,7 @@
     finishedDrag.dot.style.setProperty('--dot-y', String(snappedPosition.y));
     applyLabelPosition(labelForDotId(finishedDrag.dot.dataset.dotId), snappedPosition.x, snappedPosition.y);
 
-    suppressGridClickAfterPointerUp();
+    lastCompletedGesture = finishedDrag;
     htmx.ajax('POST', '/dot/' + finishedDrag.dot.dataset.dotId + '/move/', {
       swap: 'none',
       values: {
@@ -259,7 +252,7 @@
     gridPointerGesture = null;
 
     if (finishedGesture.didMove) {
-      suppressGridClickAfterPointerUp();
+      lastCompletedGesture = finishedGesture;
     }
   }
 
@@ -343,7 +336,7 @@
   });
 
   grid.addEventListener('click', function (e) {
-    if (suppressNextGridClick) return;
+    if (lastCompletedGesture && lastCompletedGesture.didMove) return;
     if (e.target.closest('.signal-dot, .signal-axis')) return;
     const position = gridPercentFromPointer(e.clientX, e.clientY);
     const x = Math.round(position.x);
@@ -358,7 +351,7 @@
   });
 
   document.addEventListener('click', function (e) {
-    if (!suppressNextGridClick) return;
+    if (!lastCompletedGesture || !lastCompletedGesture.didMove) return;
     if (!e.target.closest('.signal-dot')) return;
     e.preventDefault();
     e.stopPropagation();
