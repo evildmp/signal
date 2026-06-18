@@ -126,7 +126,7 @@ def test_using_signal_modal_shows_once_and_stays_dismissed(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_older_visible_dot_renders_same_opacity_as_newer_dot(
+def test_older_dot_has_lower_opacity_than_newer_dot(
     page, login_jerry, minimum_team_hierarchy
 ):
     recent_dot = Dot.objects.create(x=25, y=55)
@@ -150,18 +150,18 @@ def test_older_visible_dot_renders_same_opacity_as_newer_dot(
 
     recent_opacity = float(
         page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
+            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')).opacity",
             str(recent_dot.id),
         )
     )
     older_opacity = float(
         page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
+            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')).opacity",
             str(older_dot.id),
         )
     )
 
-    assert older_opacity == recent_opacity
+    assert older_opacity < recent_opacity
 
 
 @pytest.mark.django_db(transaction=True)
@@ -280,13 +280,13 @@ def test_logged_in_users_aged_dot_stays_more_visible_than_other_aged_dots(
 
     owned_opacity = float(
         page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
+            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')).opacity",
             str(owned_dot.id),
         )
     )
     other_opacity = float(
         page.evaluate(
-            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"] .signal-dot-fill')).opacity",
+            "dotId => getComputedStyle(document.querySelector('.signal-dot[data-dot-id=\"' + dotId + '\"]')).opacity",
             str(other_dot.id),
         )
     )
