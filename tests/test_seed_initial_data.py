@@ -90,11 +90,6 @@ def test_seed_initial_data_correlates_known_labels_with_grid_positions():
     assert excited_dot.x > 65
     assert excited_dot.y > 65
 
-    relaxed_dot = next((dot for dot in dots if dot.feeling == ["relaxed"]), None)
-    assert relaxed_dot is not None
-    assert relaxed_dot.x > 60
-    assert relaxed_dot.y < 40
-
     irritated_dot = next((dot for dot in dots if dot.feeling == ["irritated"]), None)
     assert irritated_dot is not None
     assert irritated_dot.x < 40

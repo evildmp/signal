@@ -65,29 +65,29 @@ USERS_AND_TEAMS = {
 
 
 USER_DOT_COUNTS = {
-    "jerry": 5,
-    "tina": 9,
-    "david_b": 6,
-    "chris": 7,
-    "lou": 4,
-    "sterling": 3,
-    "moe": 2,
-    "john": 6,
-    "jonathan": 8,
-    "ernie": 5,
-    "david_r": 2,
-    "rik": 5,
-    "benjamin": 5,
-    "elliot": 5,
-    "greg": 5,
-    "florian": 4,
-    "ralf": 4,
-    "wolfgan": 4,
-    "karl": 4,
-    "john_l": 8,
-    "ringo": 7,
-    "paul": 6,
-    "george": 4,
+    "jerry": 3,
+    "tina": 5,
+    "david_b": 3,
+    "chris": 4,
+    "lou": 2,
+    "sterling": 2,
+    "moe": 1,
+    "john": 3,
+    "jonathan": 4,
+    "ernie": 3,
+    "david_r": 1,
+    "rik": 3,
+    "benjamin": 3,
+    "elliot": 3,
+    "greg": 3,
+    "florian": 2,
+    "ralf": 2,
+    "wolfgan": 2,
+    "karl": 2,
+    "john_l": 4,
+    "ringo": 4,
+    "paul": 3,
+    "george": 2,
 }
 
 
@@ -368,6 +368,9 @@ class Command(BaseCommand):
             named_indices = _pick_ratio_indices(
                 _deterministic_rng("named", username), dot_count, 0.30
             )
+            no_label_indices = _pick_ratio_indices(
+                _deterministic_rng("no-label", username), dot_count, 0.30
+            )
             action_indices = _pick_ratio_indices(
                 _deterministic_rng("action", username), dot_count, 0.20
             )
@@ -396,31 +399,32 @@ class Command(BaseCommand):
 
                 dot.teams.set(target_teams)
 
-                if dot_number in named_indices:
+                if dot_number in named_indices and dot_number not in no_label_indices:
                     dot.owner_user = user
                 else:
                     dot.owner_user = None
 
-                _apply_dot_mood(dot, mood)
+                if dot_number not in no_label_indices:
+                    _apply_dot_mood(dot, mood)
 
-                if dot_number in action_indices:
-                    action_rng = _deterministic_rng("action-text", username, dot_number)
-                    if action_rng.random() < 0.3:
-                        dot.action_sentiment = []
-                        dot.action_sentiment_free_text = action_rng.choice(
-                            [
-                                "I could use a quick chat",
-                                "I need a sounding board",
-                                "I want help",
-                                "I want to share this",
-                            ]
-                        )
+                    if dot_number in action_indices:
+                        action_rng = _deterministic_rng("action-text", username, dot_number)
+                        if action_rng.random() < 0.3:
+                            dot.action_sentiment = []
+                            dot.action_sentiment_free_text = action_rng.choice(
+                                [
+                                    "I could use a quick chat",
+                                    "I need a sounding board",
+                                    "I want help",
+                                    "I want to share this",
+                                ]
+                            )
+                        else:
+                            dot.action_sentiment = [action_rng.choice(ACTION_SENTIMENTS)]
+                            dot.action_sentiment_free_text = ""
                     else:
-                        dot.action_sentiment = [action_rng.choice(ACTION_SENTIMENTS)]
+                        dot.action_sentiment = []
                         dot.action_sentiment_free_text = ""
-                else:
-                    dot.action_sentiment = []
-                    dot.action_sentiment_free_text = ""
 
                 dot.save(
                     update_fields=[
