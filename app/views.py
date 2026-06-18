@@ -104,11 +104,20 @@ def compute_dot_z_index(dot, user):
     return 100 if dot.owner_user_id == user.id else 0
 
 
+def build_dot_opacity(dot):
+    max_age = DOT_VISIBILITY_WINDOW.total_seconds()
+    age = timezone.now() - dot.created_at
+    age_ratio = min(1.0, max(0.0, age.total_seconds() / max_age))
+    return round(max(0.1, (1 - age_ratio) ** 1.5), 2)
+
+
 def build_dot_style(request, dot):
+    opacity = build_dot_opacity(dot)
     return (
         f"--dot-x: {dot.x}; --dot-y: {dot.y}; "
         f"--dot-unclaimed-color: {build_dot_unclaimed_colour(request, dot)};"
         f"--dot-z: {dot.z_index};"
+        f"opacity: {opacity};"
     )
 
 
@@ -215,6 +224,7 @@ def build_dot_updated_payload(request, dot):
     dot.published_label_groups = build_published_label_groups(dot)
     dot.published_label_class = build_dot_label_position_class(dot)
     dot.z_index = compute_dot_z_index(dot, request.user)
+    dot.age_opacity = build_dot_opacity(dot)
     return {
         "dotId": dot.id,
         "ownedByUser": user_can_manage_dot(
@@ -323,6 +333,7 @@ def home(request):
             or dot.ownership_token in ownership_tokens
         )
         dot.z_index = compute_dot_z_index(dot, request.user)
+        dot.age_opacity = build_dot_opacity(dot)
         dot.published_label_groups = build_published_label_groups(dot)
         dot.published_label_parts = build_published_label_parts(dot)
         dot.published_label_class = build_dot_label_position_class(dot)
