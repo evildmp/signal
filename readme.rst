@@ -41,6 +41,8 @@ Get started
 
 Install the dependencies with ``pip install -r requirements_dev.txt`` (ideally in a clean Python virtual environment).
 
+``settings.py`` expects to load key settings from environment variables, so *for development purposes only* copy ``.env.development`` to ``.env`` (``.gitignore`` stops ``.env`` from being committed accidentally).
+
 Run the migrations with ``python manage.py migrate``.
 
 Seed initial development data with ``python manage.py seed_initial_data``.

@@ -3,9 +3,9 @@ import os
 import pytest
 from django.contrib.auth import get_user_model
 
-from app.models import SignalOnboardingState, Team, TeamMembership
-
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
+
+from app.models import SignalOnboardingState, Team, TeamMembership
 
 
 @pytest.fixture(autouse=True)
