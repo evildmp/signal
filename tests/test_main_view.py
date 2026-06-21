@@ -59,6 +59,39 @@ def test_main_view_drawer_contains_visible_teams_and_explicit_defaults(
 
 
 @pytest.mark.django_db
+def test_main_view_shows_user_actions_above_grid(client, jerry_with_explicit_teams):
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'class="signal-user-actions"' in content
+    assert "jerry" in content
+    assert 'action="/logout/"' in content
+    assert "Log out" in content
+    assert 'href="/admin/"' not in content
+
+
+@pytest.mark.django_db
+def test_main_view_shows_admin_link_for_staff_users(client, jerry_with_explicit_teams):
+    jerry_with_explicit_teams.is_staff = True
+    jerry_with_explicit_teams.save(update_fields=["is_staff"])
+    client.force_login(jerry_with_explicit_teams)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'class="signal-user-actions"' in content
+    assert "jerry" in content
+    assert 'href="/admin/"' in content
+    assert "Admin" in content
+    assert 'action="/logout/"' in content
+    assert "Log out" in content
+
+
+@pytest.mark.django_db
 def test_first_visit_shows_using_signal_modal(client, jerry_with_explicit_teams):
     client.force_login(jerry_with_explicit_teams)
 

@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.forms import Select
 from django.urls import reverse
 
 from app.models import Team, TeamMembership
@@ -45,6 +46,26 @@ def _user_change_payload(admin_change_response):
         payload[field_name] = str(value)
 
     return payload
+
+
+@pytest.mark.django_db
+def test_team_admin_membership_inline_uses_user_select(admin_client):
+    team = Team.objects.create(name="Blue")
+    user = get_user_model().objects.create_user(username="jerry", password="jerry")
+    TeamMembership.objects.create(team=team, user=user)
+
+    response = admin_client.get(reverse("admin:app_team_change", args=[team.id]))
+
+    assert response.status_code == 200
+    membership_inline = next(
+        inline
+        for inline in response.context["inline_admin_formsets"]
+        if inline.opts.model is TeamMembership
+    )
+    assert membership_inline.opts.readonly_fields == ()
+    widget = membership_inline.formset.forms[0].fields["user"].widget
+    inner_widget = getattr(widget, "widget", widget)
+    assert isinstance(inner_widget, Select)
 
 
 @pytest.mark.django_db
@@ -95,6 +116,26 @@ def test_team_admin_allows_removing_user_membership(admin_client):
 
     assert response.status_code in (200, 302)
     assert not TeamMembership.objects.filter(id=membership.id).exists()
+
+
+@pytest.mark.django_db
+def test_user_admin_team_membership_inline_uses_team_select(admin_client):
+    user = get_user_model().objects.create_user(username="jerry", password="jerry")
+    team = Team.objects.create(name="Blue")
+    TeamMembership.objects.create(team=team, user=user)
+
+    response = admin_client.get(reverse("admin:auth_user_change", args=[user.id]))
+
+    assert response.status_code == 200
+    membership_inline = next(
+        inline
+        for inline in response.context["inline_admin_formsets"]
+        if inline.opts.model is TeamMembership
+    )
+    assert membership_inline.opts.readonly_fields == ()
+    widget = membership_inline.formset.forms[0].fields["team"].widget
+    inner_widget = getattr(widget, "widget", widget)
+    assert isinstance(inner_widget, Select)
 
 
 @pytest.mark.django_db

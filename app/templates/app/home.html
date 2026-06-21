@@ -45,10 +45,6 @@
                 {% include "app/_team_tree_with_toggle.html" with toggle_field=drawer_filter_form.enabled toggle_label="My dots only" team_tree=team_tree selected_team_ids=selected_team_ids team_field_name=team_field_name only %}
               </form>
 
-              <form method="post" action="{% url 'logout' %}" class="drawer-logout">
-                {% csrf_token %}
-                <button class="p-button--base" type="submit">Log out</button>
-              </form>
             </div>
           </div>
         </div>
@@ -58,6 +54,18 @@
         <section class="p-panel">
           <div class="p-panel__header">
             <h1 class="p-panel__title">Signal</h1>
+            <div class="p-panel__controls">
+              <nav class="signal-user-actions" aria-label="User actions">
+                <span class="signal-user-actions__username">{{ request.user.username }}</span>
+                {% if request.user.is_staff %}
+                  <a href="{% url 'admin:index' %}">Admin</a>
+                {% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                  {% csrf_token %}
+                  <button class="p-button--base" type="submit">Log out</button>
+                </form>
+              </nav>
+            </div>
           </div>
           <div class="p-panel__content">
             <p class="p-text--small">

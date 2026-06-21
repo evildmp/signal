@@ -3,6 +3,10 @@
   min-height: 100%;
 }
 
+a:visited {
+  color: inherit;
+}
+
 .l-navigation .p-panel {
   display: flex;
   flex-direction: column;
@@ -41,6 +45,32 @@
 
 .drawer-logout {
   margin-top: auto;
+}
+
+.signal-user-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  white-space: nowrap;
+}
+
+.signal-user-actions form {
+  display: inline;
+  margin: 0;
+}
+
+.signal-user-actions .p-button--base {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.signal-user-actions__username {
+  display: inline;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .l-navigation {

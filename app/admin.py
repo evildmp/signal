@@ -11,14 +11,12 @@ class TeamMembershipInlineForTeam(admin.TabularInline):
     model = TeamMembership
     fk_name = "team"
     extra = 0
-    raw_id_fields = ("user",)
 
 
 class TeamMembershipInlineForUser(admin.TabularInline):
     model = TeamMembership
     fk_name = "user"
     extra = 0
-    raw_id_fields = ("team",)
 
 
 @admin.register(Team)
