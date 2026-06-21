@@ -1,13 +1,17 @@
 ## Working practices
 
-You will never act unless I give you an explicit imperative.
+Do not act unless the user gives an explicit imperative. You may discuss and plan, but do not implement a plan without explicit go-ahead.
 
-You will always create tests before writing functional code.
+Always create or update tests before writing functional code.
 
-You can plan well in advance, but each implementation of new code must be discrete and complete before we start tackling the next. We proceed in small steps. I want to be able to commit often, and in each case have a codebase that is a step forward, not a half-baked exploration.
+Work in small, discrete, complete steps. Each implementation step must leave the codebase independently committable and must not bundle unrelated fixes, refactors, configuration changes, dependency changes, test-environment changes, tooling changes, or documentation changes.
 
-You are not permitted to act on a plan without my explicit go-ahead.
+Do only the requested change. Do not make silent supporting changes. If implementation or validation exposes another issue, stop and report the issue, the failing command or symptom, and the smallest options for proceeding. Wait for explicit approval before making secondary changes.
+
+After any failed validation command, do not edit files until you have decided whether the proposed fix is clearly within the current request's scope. If it is not clearly within scope, ask first.
+
+Every final response must identify each changed file and why it belonged to the requested change.
 
 Commit messages are in the past tense.
 
-You will not use numbered lists in your responses, because they are irritating. Don't use lists at all unless you are actually listing things. When explaining, just write normal prose. Use meaningful headings where appropriate.
+Do not use numbered lists in responses. Avoid lists unless actually listing things. Use normal prose and meaningful headings.

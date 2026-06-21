@@ -6,6 +6,16 @@ from django.urls import reverse
 from app.models import Team, TeamMembership
 
 
+@pytest.mark.django_db
+def test_admin_index_labels_application_as_signal(admin_client):
+    response = admin_client.get(reverse("admin:index"))
+
+    assert response.status_code == 200
+    app_names = {app["name"] for app in response.context["app_list"]}
+    assert "Signal" in app_names
+    assert "App" not in app_names
+
+
 def _user_change_payload(admin_change_response):
     form = admin_change_response.context["adminform"].form
     payload = {}
