@@ -113,6 +113,17 @@ def test_seed_initial_data_ensures_expected_users_and_passwords():
 
 
 @pytest.mark.django_db
+def test_seed_initial_data_gives_every_user_at_least_one_named_dot():
+    call_command("seed_initial_data")
+
+    user_model = get_user_model()
+
+    for username in USERS_AND_TEAMS:
+        user = user_model.objects.get(username=username)
+        assert Dot.objects.filter(owner_user=user).exists(), username
+
+
+@pytest.mark.django_db
 def test_seed_initial_data_makes_jerry_staff_superuser_and_in_all_teams():
     call_command("seed_initial_data")
 

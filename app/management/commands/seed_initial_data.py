@@ -235,6 +235,20 @@ def _pick_ratio_indices(rng, total_count, ratio):
     return set(indices[:target_count])
 
 
+def _ensure_named_index(named_indices, no_label_indices, total_count):
+    if named_indices - no_label_indices:
+        return named_indices, no_label_indices
+
+    for index in range(total_count):
+        if index not in no_label_indices:
+            named_indices.add(index)
+            return named_indices, no_label_indices
+
+    named_indices.add(0)
+    no_label_indices.discard(0)
+    return named_indices, no_label_indices
+
+
 def _deterministic_rng(*parts):
     key = "|".join(str(part) for part in parts)
     seed = int.from_bytes(hashlib.sha256(key.encode("utf-8")).digest()[:8], "big")
@@ -370,6 +384,9 @@ class Command(BaseCommand):
             )
             no_label_indices = _pick_ratio_indices(
                 _deterministic_rng("no-label", username), dot_count, 0.30
+            )
+            named_indices, no_label_indices = _ensure_named_index(
+                named_indices, no_label_indices, dot_count
             )
             action_indices = _pick_ratio_indices(
                 _deterministic_rng("action", username), dot_count, 0.20

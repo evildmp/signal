@@ -47,12 +47,18 @@ Run the migrations with ``python manage.py migrate``.
 
 Seed initial development data with ``python manage.py seed_initial_data``.
 
-Start the app with ``python manage.py runserver``, (or ``python manage.py runserver 0.0.0.0:8080`` if you need a different local port).
+Start the app with ``python manage.py runserver``, (or ``python manage.py runserver 0.0.0.0:8080`` if you need a particular local port, or will access the server from another host).
 
 How to run tests
 ----------------
 
-Run `python -m pytest`.
+Tests use Playwright. By default, this uses Chromium, which in turn may require further dependencies.
+
+Install browser binaries in the virtual environment::
+
+    python -m playwright install --with-deps chromium  # or webkit, or firefix
+
+Run ``python -m pytest``. (Use e.g. ``--browser webkit`` to specify another browser engine.)
 
 Internals
 =========
