@@ -1,0 +1,107 @@
+# This file defines the OCI image, or rock, for the Signal Django application.
+# It deliberately avoids Rockcraft's django-framework extension because that
+# extension expects a different project layout from this repository.
+
+# Name the rock and the resulting OCI image artifact.
+name: signal
+
+# Use a full Ubuntu 24.04 runtime base while the custom rock is being brought up.
+# This is easier to validate than a bare or chiselled base because it starts with
+# a conventional Ubuntu userspace. Once the image builds and runs reliably, the
+# base can be revisited as a separate optimization step.
+base: ubuntu@24.04
+
+# Set the application version used in the generated .rock filename and metadata.
+version: "0.1"
+
+# Provide the short description shown in image metadata and registries.
+summary: Signal Django application
+
+# Provide the longer description shown in image metadata and registries.
+description: Signal packages the Django application with a custom Rockcraft configuration.
+
+# Declare the CPU architectures this project currently builds for.
+platforms:
+  # Build the first rock for amd64. Additional architectures can be added once
+  # the packaging works and any architecture-specific dependency issues are known.
+  amd64:
+
+# Services define the processes Pebble starts when the container runs.
+services:
+  # Run the Django web application.
+  django:
+    # Replace any inherited service definition with this explicit command.
+    override: replace
+    # Start Gunicorn against the project's real WSGI entrypoint and listen on port 8000.
+    command: /bin/python3 -m gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    # Start the web service automatically when the container starts.
+    startup: enabled
+    # Run from the copied application directory so Python imports config/ and app/.
+    working-dir: /app
+    # Run as Rockcraft's unprivileged daemon user rather than root.
+    user: _daemon_
+    # Set the Django settings module used by Gunicorn workers.
+    environment:
+      # Use the runtime settings module; required values still come from env vars.
+      DJANGO_SETTINGS_MODULE: config.settings
+
+# Parts describe how Rockcraft assembles the filesystem that becomes the OCI
+# image. Each part contributes files to the final image. This project uses
+# explicit parts so the packaging adapts to the existing Django layout rather
+# than requiring the application to be moved into Rockcraft's framework layout.
+parts:
+  # Build the Python environment used by Django and Gunicorn at runtime.
+  python-dependencies:
+    # The Python plugin creates a virtual environment and installs Python packages.
+    plugin: python
+    # Use the repository root so requirements.txt is available to the plugin.
+    source: .
+    # Install the pinned application runtime dependencies from requirements.txt.
+    python-requirements:
+      - requirements.txt
+    # Add system packages needed by the Python plugin while building the venv.
+    stage-packages:
+      # Provides Python's venv module on the Ubuntu base.
+      - python3-venv
+    # Extend the Python plugin build so static assets are collected into the image.
+    override-build: |
+      # Run the Python plugin's normal dependency installation first.
+      craftctl default
+      # Run Django commands from the repository source tree.
+      cd "$CRAFT_PART_SRC"
+      # Collect static files with build-only settings values; collectstatic imports
+      # Django settings but does not need a real production secret or database.
+      SECRET_KEY=build-time-only \
+      DEBUG=false \
+      ALLOWED_HOSTS=localhost \
+      DATABASE_URL=sqlite:///build.sqlite3 \
+        "$CRAFT_PART_INSTALL/bin/python" manage.py collectstatic --noinput --clear
+      # Copy the collected static files into /app so WhiteNoise can serve them at runtime.
+      mkdir -p "$CRAFT_PART_INSTALL/app"
+      cp -a "$CRAFT_PART_SRC/staticfiles" "$CRAFT_PART_INSTALL/app/staticfiles"
+
+  # Copy the Django source tree into the runtime location used inside the rock.
+  application-files:
+    # The dump plugin copies files without compiling or transforming them.
+    plugin: dump
+    # Copy from the repository root.
+    source: .
+    # Map repository paths into /app in the image. Rockcraft paths here are
+    # relative to the image root, so "app/manage.py" becomes /app/manage.py.
+    organize:
+      # Django management entrypoint, useful for migrations and administrative commands.
+      manage.py: app/manage.py
+      # Django settings, URL configuration, ASGI, and WSGI package.
+      config: app/config
+      # The Signal Django application package.
+      app: app/app
+      # Runtime dependency list, kept in the image for inspection/debugging.
+      requirements.txt: app/requirements.txt
+    # Prime only the runtime application files from this part. This prevents the
+    # dump part from copying tests, local databases, .env files, and other source
+    # tree artifacts into the final image.
+    prime:
+      - app/manage.py
+      - app/config
+      - app/app
+      - app/requirements.txt
