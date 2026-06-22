@@ -24,7 +24,7 @@ description: Signal packages the Django application with a custom Rockcraft conf
 platforms:
   # Build the first rock for amd64. Additional architectures can be added once
   # the packaging works and any architecture-specific dependency issues are known.
-  amd64:
+  arm64:
 
 # Services define the processes Pebble starts when the container runs.
 services:
