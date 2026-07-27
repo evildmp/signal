@@ -49,6 +49,15 @@ Seed initial development data with ``python manage.py seed_initial_data``.
 
 Start the app with ``python manage.py runserver``, (or ``python manage.py runserver 0.0.0.0:8080`` if you need a particular local port, or will access the server from another host).
 
+
+Users
+~~~~~
+
+You'll need to log in. Multiple users exist in the system. Log in as ``jerry`` with the password ``jerry`` - ``jerry`` is the only admin user.
+
+You can see all the users listed at http://localhost:8000/admin/auth/user/. Everyu user's password is their user name.
+
+
 How to run tests
 ----------------
 
